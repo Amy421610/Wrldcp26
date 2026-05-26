@@ -1,505 +1,705 @@
-import React, { useState, useMemo, useEffect } from 'react';
-import { Download, Users, Trophy, ChevronRight, Save } from 'lucide-react';
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Predicciones Mundial 2026</title>
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;700;900&family=Barlow:wght@400;500;700&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; }
+    html, body { margin: 0; padding: 0; background: #ffffff; }
+    body { font-family: 'Barlow', sans-serif; }
 
-// --- CONFIGURACIÓN Y DATOS INICIALES ---
-const INITIAL_GROUPS = {
-  'A': ['México', 'Sudáfrica', 'Corea', 'Chequia'],
-  'B': ['Canadá', 'Bosnia', 'Qatar', 'Suiza'],
-  'C': ['Brasil', 'Marruecos', 'Haití', 'Escocia'],
-  'D': ['EE.UU.', 'Paraguay', 'Australia', 'Turquía'],
-  'E': ['Alemania', 'Curazao', 'C. de Marfil', 'Ecuador'],
-  'F': ['Países Bajos', 'Japón', 'Suecia', 'Túnez'],
-  'G': ['Bélgica', 'Egipto', 'Irán', 'N. Zelanda'],
-  'H': ['España', 'Cabo Verde', 'Arabia S.', 'Uruguay'],
-  'I': ['Francia', 'Senegal', 'Irak', 'Noruega'],
-  'J': ['Argentina', 'Argelia', 'Austria', 'Jordania'],
-  'K': ['Portugal', 'RD Congo', 'Uzbekistán', 'Colombia'],
-  'L': ['Inglaterra', 'Croacia', 'Ghana', 'Panamá']
-};
-
-const generateMatches = () => {
-  const matches = [];
-  let id = 1;
-  const matchPairs = [[0, 1], [2, 3], [0, 2], [3, 1], [3, 0], [1, 2]];
-  Object.entries(INITIAL_GROUPS).forEach(([groupName, teams]) => {
-    matchPairs.forEach(pair => {
-      matches.push({ id: id++, group: groupName, team1: teams[pair[0]], team2: teams[pair[1]] });
-    });
-  });
-  return matches;
-};
-
-const ALL_MATCHES = generateMatches();
-
-// --- COLORES DEL MUNDIAL 2026 ---
-const COLORS = {
-  violet: '#6820C9',
-  green: '#11A653',
-  red: '#EA323D',
-  blue: '#0059C8',
-  dark: '#1A1A1A'
-};
-
-// --- COMPONENTE PRINCIPAL ---
-export default function App() {
-  const [activeTab, setActiveTab] = useState('perfiles'); // 'perfiles', 'grupos', 'eliminatorias', 'resumen'
-  
-  // Estado de Usuarios
-  const [users, setUsers] = useState([
-    { id: 1, name: 'Usuario 1', color: COLORS.violet, scores: {}, knockoutScores: {} }
-  ]);
-  const [activeUserId, setActiveUserId] = useState(1);
-  const [newUserName, setNewUserName] = useState('');
-
-  // Estados Locales para la UI (Dependen del usuario activo)
-  const [activeGroup, setActiveGroup] = useState('A');
-  const [activeKnockoutRound, setActiveKnockoutRound] = useState('R32');
-
-  const activeUser = users.find(u => u.id === activeUserId);
-  const currentScores = activeUser?.scores || {};
-  const currentKnockoutScores = activeUser?.knockoutScores || {};
-
-  // --- FUNCIONES DE USUARIO ---
-  const addUser = () => {
-    if (users.length >= 6) return; // Límite de 6
-    const name = newUserName.trim() || `Usuario ${users.length + 1}`;
-    const colorArray = [COLORS.violet, COLORS.green, COLORS.blue, COLORS.red, '#FF8A00', '#00D1FF'];
-    const newUser = {
-      id: Date.now(),
-      name,
-      color: colorArray[users.length],
-      scores: {},
-      knockoutScores: {}
-    };
-    setUsers([...users, newUser]);
-    setNewUserName('');
-    setActiveUserId(newUser.id);
-    setActiveTab('grupos');
-  };
-
-  const deleteUser = (id, e) => {
-    e.stopPropagation();
-    const newUsers = users.filter(u => u.id !== id);
-    if (newUsers.length === 0) {
-      // Siempre debe haber al menos 1
-      newUsers.push({ id: 1, name: 'Usuario 1', color: COLORS.violet, scores: {}, knockoutScores: {} });
+    .card-enter { animation: cardEnter 0.35s cubic-bezier(.22,1,.36,1) both; }
+    @keyframes cardEnter {
+      from { opacity: 0; transform: translateY(18px); }
+      to   { opacity: 1; transform: none; }
     }
-    setUsers(newUsers);
-    if (activeUserId === id) setActiveUserId(newUsers[0].id);
-  };
+    .zoom-enter { animation: zoomEnter 0.4s cubic-bezier(.22,1,.36,1) both; }
+    @keyframes zoomEnter {
+      from { opacity: 0; transform: scale(0.96); }
+      to   { opacity: 1; transform: scale(1); }
+    }
 
-  // --- LÓGICA DE ACTUALIZACIÓN DE DATOS ---
-  const updateUserData = (field, matchId, subfield, value) => {
-    if (value !== '' && !/^\d+$/.test(value)) return;
-    setUsers(prevUsers => prevUsers.map(user => {
-      if (user.id === activeUserId) {
-        return {
-          ...user,
-          [field]: {
-            ...user[field],
-            [matchId]: {
-              ...(user[field][matchId] || {}),
-              [subfield]: value
-            }
-          }
-        };
-      }
-      return user;
-    }));
-  };
+    /* Scrollbar minimalista */
+    ::-webkit-scrollbar { width: 4px; height: 4px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: #d4d4d4; border-radius: 4px; }
 
-  const handleScoreChange = (matchId, team, value) => updateUserData('scores', matchId, team, value);
-  const handleKnockoutScore = (matchId, field, value) => updateUserData('knockoutScores', matchId, field, value);
+    /* Focus ring personalizado vía clase JS */
+    input:focus { outline: none; }
 
-  // --- LÓGICA DE FASE DE GRUPOS ---
-  const getStandingsForGroup = (groupName, scoresData) => {
-    const teamsInGroup = INITIAL_GROUPS[groupName];
-    let table = teamsInGroup.map(team => ({
-      name: team, pj: 0, pg: 0, pe: 0, pp: 0, gf: 0, gc: 0, dg: 0, pts: 0, group: groupName
-    }));
-    const groupMatches = ALL_MATCHES.filter(m => m.group === groupName);
+    /* Ocultar flechas en inputs numéricos */
+    input[type=number]::-webkit-inner-spin-button,
+    input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
 
-    groupMatches.forEach(match => {
-      const matchScore = scoresData[match.id];
-      if (matchScore && matchScore.team1 !== undefined && matchScore.team1 !== '' && 
-          matchScore.team2 !== undefined && matchScore.team2 !== '') {
-        const g1 = parseInt(matchScore.team1); const g2 = parseInt(matchScore.team2);
-        const t1 = table.find(t => t.name === match.team1); const t2 = table.find(t => t.name === match.team2);
+  <script type="text/babel">
+    const { useState, useMemo, useCallback } = React;
 
-        t1.pj++; t2.pj++; t1.gf += g1; t1.gc += g2; t2.gf += g2; t2.gc += g1;
-        if (g1 > g2) { t1.pts += 3; t1.pg++; t2.pp++; } 
-        else if (g1 < g2) { t2.pts += 3; t2.pg++; t1.pp++; } 
-        else { t1.pts += 1; t2.pts += 1; t1.pe++; t2.pe++; }
-      }
-    });
+    // ─── DATOS ────────────────────────────────────────────────────────────────
+    const INITIAL_GROUPS = {
+      'A': ['México',       'Sudáfrica',  'Corea',      'Chequia'],
+      'B': ['Canadá',       'Bosnia',     'Qatar',       'Suiza'],
+      'C': ['Brasil',       'Marruecos',  'Haití',       'Escocia'],
+      'D': ['EE.UU.',       'Paraguay',   'Australia',   'Turquía'],
+      'E': ['Alemania',     'Curazao',    'C. de Marfil','Ecuador'],
+      'F': ['Países Bajos', 'Japón',      'Suecia',      'Túnez'],
+      'G': ['Bélgica',      'Egipto',     'Irán',        'N. Zelanda'],
+      'H': ['España',       'Cabo Verde', 'Arabia S.',   'Uruguay'],
+      'I': ['Francia',      'Senegal',    'Irak',        'Noruega'],
+      'J': ['Argentina',    'Argelia',    'Austria',     'Jordania'],
+      'K': ['Portugal',     'RD Congo',   'Uzbekistán',  'Colombia'],
+      'L': ['Inglaterra',   'Croacia',    'Ghana',       'Panamá'],
+    };
 
-    table.forEach(t => t.dg = t.gf - t.gc);
-    table.sort((a, b) => b.pts - a.pts || b.dg - a.dg || b.gf - a.gf);
-    return table;
-  };
+    const generateMatches = () => {
+      const matches = [];
+      let id = 1;
+      const pairs = [[0,1],[2,3],[0,2],[3,1],[3,0],[1,2]];
+      Object.entries(INITIAL_GROUPS).forEach(([group, teams]) => {
+        pairs.forEach(([a, b]) => {
+          matches.push({ id: id++, group, team1: teams[a], team2: teams[b] });
+        });
+      });
+      return matches;
+    };
+    const ALL_MATCHES = generateMatches();
 
-  const globalStandings = useMemo(() => {
-    const all = {};
-    Object.keys(INITIAL_GROUPS).forEach(g => { all[g] = getStandingsForGroup(g, currentScores); });
-    return all;
-  }, [currentScores]);
+    const COLORS = {
+      violet: '#6820C9',
+      green:  '#11A653',
+      red:    '#EA323D',
+      blue:   '#0059C8',
+      dark:   '#1A1A1A',
+    };
+    const USER_COLORS = [COLORS.violet, COLORS.green, COLORS.blue, COLORS.red, '#FF8A00', '#00D1FF'];
 
-  const activeGroupStandings = globalStandings[activeGroup];
-
-  // --- LÓGICA DE FASE ELIMINATORIA ---
-  const qualifiedTeams = useMemo(() => {
-    let firsts = []; let seconds = []; let thirds = [];
-    Object.values(globalStandings).forEach(table => {
-      firsts.push(table[0]); seconds.push(table[1]); thirds.push(table[2]);
-    });
-    thirds.sort((a, b) => b.pts - a.pts || b.dg - a.dg || b.gf - a.gf);
-    return { firsts, seconds, bestThirds: thirds.slice(0, 8) };
-  }, [globalStandings]);
-
-  const getWinner = (matchId, t1Name, t2Name) => {
-    const s = currentKnockoutScores[matchId];
-    if (!s || s.g1 === undefined || s.g2 === undefined || s.g1 === '' || s.g2 === '') return '???';
-    const g1 = parseInt(s.g1); const g2 = parseInt(s.g2);
-    if (g1 > g2) return t1Name; if (g2 > g1) return t2Name;
-    const p1 = parseInt(s.p1 || '0'); const p2 = parseInt(s.p2 || '0');
-    if (p1 > p2) return t1Name; if (p2 > p1) return t2Name;
-    return '???'; 
-  };
-
-  const knockoutBracket = useMemo(() => {
-    const { firsts, seconds, bestThirds } = qualifiedTeams;
-    const teamName = (arr, index) => arr[index] ? arr[index].name : '???';
-
-    const R32 = [
-      { id: 'R32-1', t1: teamName(firsts, 0), t2: teamName(bestThirds, 0) }, { id: 'R32-2', t1: teamName(firsts, 1), t2: teamName(bestThirds, 1) },
-      { id: 'R32-3', t1: teamName(firsts, 2), t2: teamName(bestThirds, 2) }, { id: 'R32-4', t1: teamName(firsts, 3), t2: teamName(bestThirds, 3) },
-      { id: 'R32-5', t1: teamName(firsts, 4), t2: teamName(bestThirds, 4) }, { id: 'R32-6', t1: teamName(firsts, 5), t2: teamName(bestThirds, 5) },
-      { id: 'R32-7', t1: teamName(firsts, 6), t2: teamName(bestThirds, 6) }, { id: 'R32-8', t1: teamName(firsts, 7), t2: teamName(bestThirds, 7) },
-      { id: 'R32-9', t1: teamName(firsts, 8), t2: teamName(seconds, 0) }, { id: 'R32-10', t1: teamName(firsts, 9), t2: teamName(seconds, 1) },
-      { id: 'R32-11', t1: teamName(firsts, 10), t2: teamName(seconds, 2) }, { id: 'R32-12', t1: teamName(firsts, 11), t2: teamName(seconds, 3) },
-      { id: 'R32-13', t1: teamName(seconds, 4), t2: teamName(seconds, 8) }, { id: 'R32-14', t1: teamName(seconds, 5), t2: teamName(seconds, 9) },
-      { id: 'R32-15', t1: teamName(seconds, 6), t2: teamName(seconds, 10) }, { id: 'R32-16', t1: teamName(seconds, 7), t2: teamName(seconds, 11) },
-    ];
-    const R16 = Array.from({ length: 8 }, (_, i) => ({ id: `R16-${i + 1}`, t1: getWinner(R32[i * 2].id, R32[i * 2].t1, R32[i * 2].t2), t2: getWinner(R32[i * 2 + 1].id, R32[i * 2 + 1].t1, R32[i * 2 + 1].t2) }));
-    const QF = Array.from({ length: 4 }, (_, i) => ({ id: `QF-${i + 1}`, t1: getWinner(R16[i * 2].id, R16[i * 2].t1, R16[i * 2].t2), t2: getWinner(R16[i * 2 + 1].id, R16[i * 2 + 1].t1, R16[i * 2 + 1].t2) }));
-    const SF = Array.from({ length: 2 }, (_, i) => ({ id: `SF-${i + 1}`, t1: getWinner(QF[i * 2].id, QF[i * 2].t1, QF[i * 2].t2), t2: getWinner(QF[i * 2 + 1].id, QF[i * 2 + 1].t1, QF[i * 2 + 1].t2) }));
-    const Final = [{ id: `FINAL`, t1: getWinner(SF[0].id, SF[0].t1, SF[0].t2), t2: getWinner(SF[1].id, SF[1].t1, SF[1].t2) }];
-    const Champion = getWinner(Final[0].id, Final[0].t1, Final[0].t2);
-
-    return { R32, R16, QF, SF, Final, Champion };
-  }, [qualifiedTeams, currentKnockoutScores]);
-
-
-  // --- COMPONENTES VISUALES ---
-  const KnockoutMatchCard = ({ match, isFinal }) => {
-    const s = currentKnockoutScores[match.id] || {};
-    const isTied = s.g1 !== undefined && s.g2 !== undefined && s.g1 !== '' && s.g2 !== '' && s.g1 === s.g2;
-    const isReady = match.t1 !== '???' && match.t2 !== '???';
-
-    return (
-      <div className={`p-4 rounded-xl shadow-sm border ${isFinal ? `bg-white border-[${COLORS.violet}] border-2 shadow-[${COLORS.violet}]/20` : 'bg-white border-neutral-200'} ${!isReady && 'opacity-60'}`}>
-        <div className="flex flex-col gap-3">
-          {/* Equipo 1 */}
-          <div className="flex justify-between items-center">
-            <span className="font-bold text-neutral-800 text-base sm:text-lg truncate w-24 sm:w-32">{match.t1}</span>
-            <div className="flex gap-1">
-              {isTied && (
-                <input type="text" value={s.p1 || ''} onChange={(e) => handleKnockoutScore(match.id, 'p1', e.target.value)}
-                  className={`w-8 h-8 text-center font-bold text-white bg-[${COLORS.violet}] rounded focus:ring-2 outline-none placeholder:text-white/50`} placeholder="P" disabled={!isReady}/>
-              )}
-              <input type="text" value={s.g1 || ''} onChange={(e) => handleKnockoutScore(match.id, 'g1', e.target.value)}
-                className="w-10 h-10 sm:w-12 sm:h-12 text-center text-xl font-black text-neutral-900 bg-neutral-100 rounded-md focus:bg-white focus:border-neutral-900 border-2 outline-none transition-colors" disabled={!isReady}/>
-            </div>
-          </div>
-          <div className="h-px bg-neutral-100 w-full"></div>
-          {/* Equipo 2 */}
-          <div className="flex justify-between items-center">
-            <span className="font-bold text-neutral-800 text-base sm:text-lg truncate w-24 sm:w-32">{match.t2}</span>
-            <div className="flex gap-1">
-              {isTied && (
-                <input type="text" value={s.p2 || ''} onChange={(e) => handleKnockoutScore(match.id, 'p2', e.target.value)}
-                  className={`w-8 h-8 text-center font-bold text-white bg-[${COLORS.violet}] rounded focus:ring-2 outline-none placeholder:text-white/50`} placeholder="P" disabled={!isReady}/>
-              )}
-              <input type="text" value={s.g2 || ''} onChange={(e) => handleKnockoutScore(match.id, 'g2', e.target.value)}
-                className="w-10 h-10 sm:w-12 sm:h-12 text-center text-xl font-black text-neutral-900 bg-neutral-100 rounded-md focus:bg-white focus:border-neutral-900 border-2 outline-none transition-colors" disabled={!isReady}/>
-            </div>
-          </div>
-        </div>
-      </div>
+    // ─── SVG ICONS (sin dependencia externa) ──────────────────────────────────
+    const IconUsers = ({ size = 16 }) => (
+      <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/>
+        <path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+      </svg>
     );
-  };
+    const IconTrophy = ({ size = 16 }) => (
+      <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <polyline points="8 21 12 17 16 21"/><line x1="12" y1="17" x2="12" y2="11"/>
+        <path d="M7 4H17l-1 7a5 5 0 0 1-10 0L7 4Z"/>
+        <path d="M5 4H3a2 2 0 0 0 0 4h2"/><path d="M19 4h2a2 2 0 0 0 0 4h-2"/>
+      </svg>
+    );
 
-  return (
-    <div className="min-h-screen bg-white text-neutral-900 font-sans selection:bg-violet-200">
-      
-      {/* Header Principal */}
-      <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-neutral-100 px-4 py-3">
-        <div className="max-w-7xl mx-auto flex flex-col sm:flex-row justify-between items-center gap-4">
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-full" style={{ background: `linear-gradient(135deg, ${COLORS.violet}, ${COLORS.blue})` }}></div>
-            <div>
-              <h1 className="text-xl font-black tracking-tighter" style={{ color: COLORS.dark }}>PREDICCIONES 2026</h1>
-            </div>
-          </div>
+    // ─── UTILIDADES ────────────────────────────────────────────────────────────
+    const getStandingsForGroup = (groupName, scoresData) => {
+      const teams = INITIAL_GROUPS[groupName];
+      const table = teams.map(name => ({
+        name, pj:0, pg:0, pe:0, pp:0, gf:0, gc:0, dg:0, pts:0, group: groupName
+      }));
+      ALL_MATCHES
+        .filter(m => m.group === groupName)
+        .forEach(match => {
+          const ms = scoresData[match.id];
+          if (!ms || ms.team1 === undefined || ms.team1 === '' || ms.team2 === undefined || ms.team2 === '') return;
+          const g1 = parseInt(ms.team1), g2 = parseInt(ms.team2);
+          const t1 = table.find(t => t.name === match.team1);
+          const t2 = table.find(t => t.name === match.team2);
+          t1.pj++; t2.pj++;
+          t1.gf += g1; t1.gc += g2;
+          t2.gf += g2; t2.gc += g1;
+          if      (g1 > g2) { t1.pts += 3; t1.pg++; t2.pp++; }
+          else if (g2 > g1) { t2.pts += 3; t2.pg++; t1.pp++; }
+          else              { t1.pts++;   t2.pts++;  t1.pe++; t2.pe++; }
+        });
+      table.forEach(t => t.dg = t.gf - t.gc);
+      table.sort((a, b) => b.pts - a.pts || b.dg - a.dg || b.gf - a.gf);
+      return table;
+    };
 
-          {/* Navegación Principal */}
-          {activeTab !== 'perfiles' && (
-            <div className="flex gap-1 bg-neutral-100 p-1 rounded-full overflow-x-auto max-w-full">
-              {[
-                { id: 'perfiles', label: 'Jugadores', icon: Users },
-                { id: 'grupos', label: 'Fase de Grupos' },
-                { id: 'eliminatorias', label: 'Fase Final' },
-                { id: 'resumen', label: 'Mi Tarjeta', icon: Trophy }
-              ].map(tab => (
-                <button key={tab.id} onClick={() => setActiveTab(tab.id)}
-                  className={`px-4 py-2 rounded-full text-sm font-bold whitespace-nowrap flex items-center gap-2 transition-all ${
-                    activeTab === tab.id 
-                      ? 'bg-white shadow-sm' 
-                      : 'text-neutral-500 hover:text-neutral-900'
-                  }`}
-                  style={activeTab === tab.id ? { color: activeUser?.color || COLORS.violet } : {}}
-                >
-                  {tab.icon && <tab.icon size={16} />}
-                  {tab.label}
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
-      </header>
+    const getWinner = (matchId, t1, t2, ks) => {
+      const s = ks[matchId];
+      if (!s || s.g1 === undefined || s.g1 === '' || s.g2 === undefined || s.g2 === '') return '???';
+      const g1 = parseInt(s.g1), g2 = parseInt(s.g2);
+      if (g1 > g2) return t1;
+      if (g2 > g1) return t2;
+      const p1 = parseInt(s.p1 || '0'), p2 = parseInt(s.p2 || '0');
+      if (p1 > p2) return t1;
+      if (p2 > p1) return t2;
+      return '???';
+    };
 
-      <main className="max-w-7xl mx-auto p-4 sm:p-6 lg:p-8">
-        
-        {/* ================= VISTA: PERFILES ================= */}
-        {activeTab === 'perfiles' && (
-          <div className="max-w-2xl mx-auto text-center space-y-8 animate-in fade-in slide-in-from-bottom-4">
-            <div className="space-y-2">
-              <h2 className="text-4xl font-black tracking-tight">Elige tu Jugador</h2>
-              <p className="text-neutral-500">Crea perfiles para que tus amigos también hagan sus predicciones.</p>
-            </div>
-            
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-              {users.map(user => (
-                <div key={user.id} onClick={() => { setActiveUserId(user.id); setActiveTab('grupos'); }}
-                  className={`relative p-6 rounded-2xl border-2 cursor-pointer transition-all hover:scale-105 ${
-                    activeUserId === user.id ? 'shadow-lg' : 'border-neutral-100 hover:border-neutral-300'
-                  }`}
-                  style={{ borderColor: activeUserId === user.id ? user.color : '' }}>
-                  
-                  {users.length > 1 && (
-                    <button onClick={(e) => deleteUser(user.id, e)} className="absolute top-2 right-2 w-6 h-6 flex items-center justify-center rounded-full bg-neutral-100 text-neutral-500 hover:bg-red-100 hover:text-red-500 text-xs">✕</button>
+    // ─── APP ──────────────────────────────────────────────────────────────────
+    function App() {
+      const [activeTab, setActiveTab] = useState('perfiles');
+      const [users, setUsers] = useState([
+        { id: 1, name: 'Usuario 1', color: USER_COLORS[0], scores: {}, knockoutScores: {} }
+      ]);
+      const [activeUserId, setActiveUserId]           = useState(1);
+      const [newUserName, setNewUserName]             = useState('');
+      const [activeGroup, setActiveGroup]             = useState('A');
+      const [activeKnockoutRound, setActiveKnockoutRound] = useState('R32');
+
+      const activeUser = users.find(u => u.id === activeUserId) || users[0];
+      const currentScores        = activeUser?.scores        || {};
+      const currentKnockoutScores = activeUser?.knockoutScores || {};
+
+      // Usuarios
+      const addUser = () => {
+        if (users.length >= 6) return;
+        const name = newUserName.trim() || `Usuario ${users.length + 1}`;
+        const newUser = {
+          id: Date.now(),
+          name,
+          color: USER_COLORS[users.length % USER_COLORS.length],
+          scores: {},
+          knockoutScores: {},
+        };
+        setUsers(prev => [...prev, newUser]);
+        setNewUserName('');
+        setActiveUserId(newUser.id);
+        setActiveTab('grupos');
+      };
+
+      const deleteUser = (id, e) => {
+        e.stopPropagation();
+        setUsers(prev => {
+          const filtered = prev.filter(u => u.id !== id);
+          if (filtered.length === 0) {
+            return [{ id: Date.now(), name: 'Usuario 1', color: USER_COLORS[0], scores: {}, knockoutScores: {} }];
+          }
+          return filtered;
+        });
+        if (activeUserId === id) {
+          const remaining = users.filter(u => u.id !== id);
+          setActiveUserId(remaining.length > 0 ? remaining[0].id : users[0].id);
+        }
+      };
+
+      const updateUserData = (field, matchId, subfield, value) => {
+        if (value !== '' && !/^\d+$/.test(value)) return;
+        setUsers(prev => prev.map(user => {
+          if (user.id !== activeUserId) return user;
+          return {
+            ...user,
+            [field]: {
+              ...user[field],
+              [matchId]: { ...(user[field][matchId] || {}), [subfield]: value }
+            }
+          };
+        }));
+      };
+
+      const handleScoreChange    = (matchId, team, value)  => updateUserData('scores',        matchId, team,  value);
+      const handleKnockoutScore  = (matchId, field, value) => updateUserData('knockoutScores', matchId, field, value);
+
+      // Standings
+      const globalStandings = useMemo(() => {
+        const all = {};
+        Object.keys(INITIAL_GROUPS).forEach(g => { all[g] = getStandingsForGroup(g, currentScores); });
+        return all;
+      }, [currentScores]);
+
+      const qualifiedTeams = useMemo(() => {
+        const firsts = [], seconds = [], thirds = [];
+        Object.values(globalStandings).forEach(table => {
+          firsts.push(table[0]); seconds.push(table[1]); thirds.push(table[2]);
+        });
+        thirds.sort((a, b) => b.pts - a.pts || b.dg - a.dg || b.gf - a.gf);
+        return { firsts, seconds, bestThirds: thirds.slice(0, 8) };
+      }, [globalStandings]);
+
+      // Bracket
+      const knockoutBracket = useMemo(() => {
+        const { firsts, seconds, bestThirds } = qualifiedTeams;
+        const tn = (arr, i) => arr[i] ? arr[i].name : '???';
+        const gw = (id, t1, t2) => getWinner(id, t1, t2, currentKnockoutScores);
+
+        const R32 = [
+          { id:'R32-1',  t1:tn(firsts,0),  t2:tn(bestThirds,0) },
+          { id:'R32-2',  t1:tn(firsts,1),  t2:tn(bestThirds,1) },
+          { id:'R32-3',  t1:tn(firsts,2),  t2:tn(bestThirds,2) },
+          { id:'R32-4',  t1:tn(firsts,3),  t2:tn(bestThirds,3) },
+          { id:'R32-5',  t1:tn(firsts,4),  t2:tn(bestThirds,4) },
+          { id:'R32-6',  t1:tn(firsts,5),  t2:tn(bestThirds,5) },
+          { id:'R32-7',  t1:tn(firsts,6),  t2:tn(bestThirds,6) },
+          { id:'R32-8',  t1:tn(firsts,7),  t2:tn(bestThirds,7) },
+          { id:'R32-9',  t1:tn(firsts,8),  t2:tn(seconds,0) },
+          { id:'R32-10', t1:tn(firsts,9),  t2:tn(seconds,1) },
+          { id:'R32-11', t1:tn(firsts,10), t2:tn(seconds,2) },
+          { id:'R32-12', t1:tn(firsts,11), t2:tn(seconds,3) },
+          { id:'R32-13', t1:tn(seconds,4), t2:tn(seconds,8) },
+          { id:'R32-14', t1:tn(seconds,5), t2:tn(seconds,9) },
+          { id:'R32-15', t1:tn(seconds,6), t2:tn(seconds,10) },
+          { id:'R32-16', t1:tn(seconds,7), t2:tn(seconds,11) },
+        ];
+        const R16 = Array.from({ length: 8 }, (_, i) => ({
+          id: `R16-${i+1}`,
+          t1: gw(R32[i*2].id,   R32[i*2].t1,   R32[i*2].t2),
+          t2: gw(R32[i*2+1].id, R32[i*2+1].t1, R32[i*2+1].t2),
+        }));
+        const QF = Array.from({ length: 4 }, (_, i) => ({
+          id: `QF-${i+1}`,
+          t1: gw(R16[i*2].id,   R16[i*2].t1,   R16[i*2].t2),
+          t2: gw(R16[i*2+1].id, R16[i*2+1].t1, R16[i*2+1].t2),
+        }));
+        const SF = Array.from({ length: 2 }, (_, i) => ({
+          id: `SF-${i+1}`,
+          t1: gw(QF[i*2].id,   QF[i*2].t1,   QF[i*2].t2),
+          t2: gw(QF[i*2+1].id, QF[i*2+1].t1, QF[i*2+1].t2),
+        }));
+        const Final = [{ id:'FINAL', t1: gw(SF[0].id, SF[0].t1, SF[0].t2), t2: gw(SF[1].id, SF[1].t1, SF[1].t2) }];
+        const Champion = gw(Final[0].id, Final[0].t1, Final[0].t2);
+        return { R32, R16, QF, SF, Final, Champion };
+      }, [qualifiedTeams, currentKnockoutScores]);
+
+      const activeGroupStandings = globalStandings[activeGroup];
+
+      // ── KnockoutMatchCard ────────────────────────────────────────────────────
+      const KnockoutMatchCard = ({ match, isFinal }) => {
+        const s = currentKnockoutScores[match.id] || {};
+        const isTied = s.g1 !== undefined && s.g2 !== undefined &&
+                       s.g1 !== '' && s.g2 !== '' && s.g1 === s.g2;
+        const isReady = match.t1 !== '???' && match.t2 !== '???';
+
+        return (
+          <div
+            className={`p-4 rounded-xl shadow-sm bg-white${!isReady ? ' opacity-60' : ''}`}
+            style={{
+              border: isFinal ? `2px solid ${activeUser.color}` : '1px solid #e5e5e5',
+              boxShadow: isFinal ? `0 4px 24px ${activeUser.color}33` : '0 1px 3px rgba(0,0,0,0.07)',
+            }}
+          >
+            <div className="flex flex-col gap-3">
+              {/* Equipo 1 */}
+              <div className="flex justify-between items-center gap-2">
+                <span className="font-bold text-neutral-800 text-base truncate flex-1">{match.t1}</span>
+                <div className="flex gap-1 items-center">
+                  {isTied && (
+                    <input
+                      type="text" inputMode="numeric" value={s.p1 || ''}
+                      onChange={e => handleKnockoutScore(match.id, 'p1', e.target.value)}
+                      placeholder="P" disabled={!isReady}
+                      className="w-8 h-8 text-center font-bold text-white rounded text-sm"
+                      style={{ backgroundColor: activeUser.color }}
+                    />
                   )}
-                  
-                  <div className="w-16 h-16 mx-auto rounded-full mb-3 shadow-inner" style={{ backgroundColor: user.color }}></div>
-                  <h3 className="font-bold truncate">{user.name}</h3>
-                </div>
-              ))}
-
-              {users.length < 6 && (
-                <div className="p-6 rounded-2xl border-2 border-dashed border-neutral-300 flex flex-col items-center justify-center gap-3">
-                  <div className="w-12 h-12 rounded-full bg-neutral-100 flex items-center justify-center text-neutral-400 text-2xl">+</div>
-                  <input type="text" value={newUserName} onChange={(e) => setNewUserName(e.target.value)}
-                    onKeyDown={(e) => e.key === 'Enter' && addUser()}
-                    placeholder="Nuevo Nombre..."
-                    className="w-full text-center text-sm font-bold bg-transparent outline-none border-b border-neutral-300 focus:border-neutral-900 pb-1"
+                  <input
+                    type="text" inputMode="numeric" value={s.g1 || ''}
+                    onChange={e => handleKnockoutScore(match.id, 'g1', e.target.value)}
+                    disabled={!isReady}
+                    className="w-10 h-10 text-center text-xl font-black text-neutral-900 bg-neutral-100 rounded-md"
+                    onFocus={e => e.target.style.boxShadow = `0 0 0 2px ${activeUser.color}`}
+                    onBlur={e  => e.target.style.boxShadow = 'none'}
                   />
-                  <button onClick={addUser} className="text-xs font-bold px-3 py-1 bg-neutral-900 text-white rounded-full">Crear</button>
                 </div>
-              )}
-            </div>
-          </div>
-        )}
-
-        {/* ================= VISTA: FASE DE GRUPOS ================= */}
-        {activeTab === 'grupos' && (
-          <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4">
-            
-            <div className="flex flex-wrap justify-center gap-2 mb-8">
-              {Object.keys(INITIAL_GROUPS).map(group => (
-                <button key={group} onClick={() => setActiveGroup(group)}
-                  className={`w-12 h-12 flex items-center justify-center rounded-xl text-lg font-black transition-all ${
-                    activeGroup === group ? 'text-white shadow-md scale-110' : 'bg-neutral-100 text-neutral-400 hover:bg-neutral-200 hover:text-neutral-900'
-                  }`}
-                  style={activeGroup === group ? { backgroundColor: activeUser.color } : {}}>
-                  {group}
-                </button>
-              ))}
-            </div>
-
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-              {/* Tabla */}
-              <section className="lg:col-span-7">
-                <div className="flex justify-between items-end mb-4 px-2">
-                  <h2 className="text-2xl font-black">Grupo {activeGroup}</h2>
-                  <div className="flex gap-4 text-xs font-bold uppercase tracking-wider">
-                    <span className="flex items-center gap-1"><div className="w-2 h-2 rounded-full" style={{backgroundColor: COLORS.green}}></div> Avanza</span>
-                    <span className="flex items-center gap-1"><div className="w-2 h-2 rounded-full" style={{backgroundColor: '#FFB800'}}></div> Posible</span>
-                  </div>
-                </div>
-                
-                <div className="bg-white rounded-3xl border border-neutral-200 overflow-hidden shadow-sm">
-                  <table className="w-full text-sm text-left">
-                    <thead className="bg-neutral-50 text-neutral-400 text-xs uppercase font-bold border-b border-neutral-200">
-                      <tr>
-                        <th className="px-6 py-4">Selección</th>
-                        <th className="px-2 py-4 text-center">PJ</th>
-                        <th className="px-2 py-4 text-center">G</th>
-                        <th className="px-2 py-4 text-center">E</th>
-                        <th className="px-2 py-4 text-center">P</th>
-                        <th className="px-2 py-4 text-center">DG</th>
-                        <th className="px-6 py-4 text-center text-neutral-900">PTS</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-neutral-100">
-                      {activeGroupStandings.map((team, index) => {
-                        let indicatorColor = 'transparent';
-                        if (index < 2) indicatorColor = COLORS.green;
-                        else if (index === 2 && qualifiedTeams.bestThirds.some(t => t.name === team.name)) indicatorColor = '#FFB800';
-                        
-                        return (
-                          <tr key={team.name} className="hover:bg-neutral-50 transition-colors">
-                            <td className="px-6 py-4 font-bold flex items-center gap-3 text-base">
-                              <div className="w-1.5 h-6 rounded-full" style={{ backgroundColor: indicatorColor }}></div>
-                              {team.name}
-                            </td>
-                            <td className="px-2 py-4 text-center text-neutral-500 font-medium">{team.pj}</td>
-                            <td className="px-2 py-4 text-center text-neutral-500 font-medium">{team.pg}</td>
-                            <td className="px-2 py-4 text-center text-neutral-500 font-medium">{team.pe}</td>
-                            <td className="px-2 py-4 text-center text-neutral-500 font-medium">{team.pp}</td>
-                            <td className="px-2 py-4 text-center font-bold text-neutral-700">{team.dg > 0 ? `+${team.dg}` : team.dg}</td>
-                            <td className="px-6 py-4 text-center font-black text-xl">{team.pts}</td>
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
-                </div>
-              </section>
-
-              {/* Partidos */}
-              <section className="lg:col-span-5">
-                <h2 className="text-xl font-bold mb-4 px-2">Partidos</h2>
-                <div className="space-y-3">
-                  {ALL_MATCHES.filter(m => m.group === activeGroup).map((match) => (
-                    <div key={match.id} className="flex items-center justify-between p-4 bg-white rounded-2xl shadow-sm border border-neutral-200 hover:border-neutral-300 transition-colors">
-                      <div className="flex-1 text-right pr-4 font-bold text-neutral-800 text-lg truncate">{match.team1}</div>
-                      
-                      <div className="flex items-center space-x-2 shrink-0 bg-neutral-50 p-1.5 rounded-xl border border-neutral-200">
-                        <input type="text" inputMode="numeric" value={currentScores[match.id]?.team1 ?? ''} onChange={(e) => handleScoreChange(match.id, 'team1', e.target.value)}
-                          className="w-12 h-12 text-center text-xl font-black bg-white focus:bg-white rounded-lg outline-none shadow-sm focus:ring-2" 
-                          style={{ ':focus': { outlineColor: activeUser.color } }}/>
-                        <span className="text-neutral-300 font-bold text-sm">vs</span>
-                        <input type="text" inputMode="numeric" value={currentScores[match.id]?.team2 ?? ''} onChange={(e) => handleScoreChange(match.id, 'team2', e.target.value)}
-                          className="w-12 h-12 text-center text-xl font-black bg-white focus:bg-white rounded-lg outline-none shadow-sm focus:ring-2" />
-                      </div>
-
-                      <div className="flex-1 text-left pl-4 font-bold text-neutral-800 text-lg truncate">{match.team2}</div>
-                    </div>
-                  ))}
-                </div>
-              </section>
-            </div>
-          </div>
-        )}
-
-        {/* ================= VISTA: FASE ELIMINATORIA ================= */}
-        {activeTab === 'eliminatorias' && (
-          <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4">
-            
-            <div className="flex flex-wrap justify-center gap-2 mb-8 bg-neutral-100 p-2 rounded-2xl max-w-fit mx-auto">
-              {[
-                { id: 'R32', label: '16avos' }, { id: 'R16', label: 'Octavos' },
-                { id: 'QF', label: 'Cuartos' }, { id: 'SF', label: 'Semis' }, { id: 'FINAL', label: 'Final' }
-              ].map(round => (
-                <button key={round.id} onClick={() => setActiveKnockoutRound(round.id)}
-                  className={`px-5 py-2.5 rounded-xl font-bold text-sm transition-all ${
-                    activeKnockoutRound === round.id ? 'bg-white text-neutral-900 shadow-sm' : 'text-neutral-500 hover:text-neutral-800'
-                  }`}>
-                  {round.label}
-                </button>
-              ))}
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-              {activeKnockoutRound === 'R32' && knockoutBracket.R32.map(match => <KnockoutMatchCard key={match.id} match={match} />)}
-              {activeKnockoutRound === 'R16' && knockoutBracket.R16.map(match => <KnockoutMatchCard key={match.id} match={match} />)}
-              {activeKnockoutRound === 'QF' && knockoutBracket.QF.map(match => <KnockoutMatchCard key={match.id} match={match} />)}
-              {activeKnockoutRound === 'SF' && knockoutBracket.SF.map(match => <div key={match.id} className="lg:col-span-2"><KnockoutMatchCard match={match} /></div>)}
-              {activeKnockoutRound === 'FINAL' && knockoutBracket.Final.map(match => (
-                <div key={match.id} className="md:col-span-2 lg:col-span-4 max-w-2xl mx-auto w-full space-y-4 text-center">
-                  <div className="inline-block px-4 py-1 rounded-full text-sm font-black uppercase tracking-widest text-white" style={{backgroundColor: COLORS.red}}>
-                    La Gran Final
-                  </div>
-                  <KnockoutMatchCard match={match} isFinal={true} />
-                </div>
-              ))}
-            </div>
-            
-          </div>
-        )}
-
-        {/* ================= VISTA: RESUMEN (SPOTIFY WRAPPED STYLE) ================= */}
-        {activeTab === 'resumen' && (
-          <div className="max-w-md mx-auto animate-in fade-in zoom-in-95 duration-500">
-            
-            {/* Tarjeta Generada */}
-            <div id="prediction-card" className="relative bg-white rounded-[2.5rem] shadow-2xl overflow-hidden aspect-[4/5] border border-neutral-100 flex flex-col">
-              
-              {/* Decoración de Fondo */}
-              <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-bl opacity-20 rounded-bl-full pointer-events-none" style={{ from: activeUser.color, to: 'transparent' }}></div>
-              <div className="absolute -bottom-20 -left-20 w-80 h-80 rounded-full opacity-10 pointer-events-none" style={{ backgroundColor: activeUser.color }}></div>
-
-              <div className="p-8 flex-1 flex flex-col relative z-10">
-                {/* Header Tarjeta */}
-                <div className="flex justify-between items-start mb-8">
-                  <div>
-                    <p className="text-xs font-bold uppercase tracking-widest text-neutral-400 mb-1">Predicción Oficial 2026</p>
-                    <h2 className="text-3xl font-black leading-none" style={{ color: activeUser.color }}>{activeUser.name}</h2>
-                  </div>
-                  <div className="w-10 h-10 rounded-full flex items-center justify-center text-white font-black text-xl" style={{ backgroundColor: activeUser.color }}>
-                    {activeUser.name.charAt(0).toUpperCase()}
-                  </div>
-                </div>
-
-                {/* El Campeón */}
-                <div className="text-center mt-auto mb-10">
-                  <p className="text-sm font-bold uppercase tracking-widest text-neutral-400 mb-2">Mi Campeón</p>
-                  <h1 className="text-6xl font-black uppercase tracking-tighter" style={{ color: COLORS.dark, textShadow: '2px 2px 0px rgba(0,0,0,0.05)' }}>
-                    {knockoutBracket.Champion}
-                  </h1>
-                  {knockoutBracket.Champion !== '???' && (
-                    <div className="mt-4 inline-flex items-center justify-center gap-2 px-4 py-2 bg-neutral-900 text-white rounded-full font-bold">
-                      <Trophy size={16} /> ¡Levanta la copa!
-                    </div>
+              </div>
+              <div className="h-px bg-neutral-100" />
+              {/* Equipo 2 */}
+              <div className="flex justify-between items-center gap-2">
+                <span className="font-bold text-neutral-800 text-base truncate flex-1">{match.t2}</span>
+                <div className="flex gap-1 items-center">
+                  {isTied && (
+                    <input
+                      type="text" inputMode="numeric" value={s.p2 || ''}
+                      onChange={e => handleKnockoutScore(match.id, 'p2', e.target.value)}
+                      placeholder="P" disabled={!isReady}
+                      className="w-8 h-8 text-center font-bold text-white rounded text-sm"
+                      style={{ backgroundColor: activeUser.color }}
+                    />
                   )}
-                </div>
-
-                {/* Camino a la Final (Desde Cuartos) */}
-                <div className="mt-auto bg-neutral-50/80 backdrop-blur rounded-2xl p-4 border border-neutral-100/50">
-                  <h3 className="text-xs font-bold uppercase tracking-widest text-neutral-400 mb-3 text-center">Semifinalistas</h3>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <div className="bg-white px-3 py-2 rounded-xl text-sm font-bold shadow-sm border border-neutral-100 truncate text-center">{knockoutBracket.SF[0]?.t1}</div>
-                      <div className="bg-white px-3 py-2 rounded-xl text-sm font-bold shadow-sm border border-neutral-100 truncate text-center">{knockoutBracket.SF[0]?.t2}</div>
-                    </div>
-                    <div className="space-y-2">
-                      <div className="bg-white px-3 py-2 rounded-xl text-sm font-bold shadow-sm border border-neutral-100 truncate text-center">{knockoutBracket.SF[1]?.t1}</div>
-                      <div className="bg-white px-3 py-2 rounded-xl text-sm font-bold shadow-sm border border-neutral-100 truncate text-center">{knockoutBracket.SF[1]?.t2}</div>
-                    </div>
-                  </div>
+                  <input
+                    type="text" inputMode="numeric" value={s.g2 || ''}
+                    onChange={e => handleKnockoutScore(match.id, 'g2', e.target.value)}
+                    disabled={!isReady}
+                    className="w-10 h-10 text-center text-xl font-black text-neutral-900 bg-neutral-100 rounded-md"
+                    onFocus={e => e.target.style.boxShadow = `0 0 0 2px ${activeUser.color}`}
+                    onBlur={e  => e.target.style.boxShadow = 'none'}
+                  />
                 </div>
               </div>
             </div>
-
-            {/* Acciones de la Tarjeta */}
-            <div className="mt-6 text-center space-y-3">
-              <p className="text-sm text-neutral-500">Toma una captura de pantalla y compártela con tus amigos.</p>
-            </div>
-            
           </div>
-        )}
+        );
+      };
 
-      </main>
-    </div>
-  );
-}
+      // ── RENDER ───────────────────────────────────────────────────────────────
+      return (
+        <div className="min-h-screen bg-white text-neutral-900">
+
+          {/* HEADER */}
+          <header
+            className="sticky top-0 z-50 border-b border-neutral-100 px-4 py-3 bg-white"
+            style={{ backdropFilter:'blur(12px)', WebkitBackdropFilter:'blur(12px)' }}
+          >
+            <div className="max-w-7xl mx-auto flex flex-col sm:flex-row justify-between items-center gap-4">
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-full" style={{ background:`linear-gradient(135deg, ${COLORS.violet}, ${COLORS.blue})` }} />
+                <h1
+                  className="text-xl font-black tracking-tighter"
+                  style={{ color: COLORS.dark, fontFamily:"'Barlow Condensed', sans-serif" }}
+                >
+                  PREDICCIONES 2026
+                </h1>
+              </div>
+
+              {activeTab !== 'perfiles' && (
+                <div className="flex gap-1 bg-neutral-100 p-1 rounded-full overflow-x-auto max-w-full">
+                  {[
+                    { id:'perfiles',      label:'Jugadores',    icon: IconUsers  },
+                    { id:'grupos',        label:'Grupos',       icon: null       },
+                    { id:'eliminatorias', label:'Fase Final',   icon: null       },
+                    { id:'resumen',       label:'Mi Tarjeta',   icon: IconTrophy },
+                  ].map(tab => (
+                    <button
+                      key={tab.id}
+                      onClick={() => setActiveTab(tab.id)}
+                      className="px-3 py-2 rounded-full text-sm font-bold whitespace-nowrap flex items-center gap-1 transition-all"
+                      style={activeTab === tab.id
+                        ? { backgroundColor:'white', color: activeUser.color, boxShadow:'0 1px 4px rgba(0,0,0,0.12)' }
+                        : { color:'#737373' }}
+                    >
+                      {tab.icon && React.createElement(tab.icon, { size:14 })}
+                      {tab.label}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          </header>
+
+          <main className="max-w-7xl mx-auto p-4 sm:p-6 lg:p-8">
+
+            {/* ══ PERFILES ════════════════════════════════════════════════════ */}
+            {activeTab === 'perfiles' && (
+              <div className="max-w-2xl mx-auto text-center space-y-8 card-enter">
+                <div className="space-y-2 pt-4">
+                  <h2
+                    className="text-5xl font-black tracking-tight"
+                    style={{ fontFamily:"'Barlow Condensed', sans-serif" }}
+                  >
+                    Elige tu Jugador
+                  </h2>
+                  <p className="text-neutral-500">
+                    Crea perfiles para que tus amigos también hagan sus predicciones.
+                  </p>
+                </div>
+
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+                  {users.map(user => (
+                    <div
+                      key={user.id}
+                      onClick={() => { setActiveUserId(user.id); setActiveTab('grupos'); }}
+                      className="relative p-6 rounded-2xl border-2 cursor-pointer transition-all hover:scale-105 select-none"
+                      style={{ borderColor: activeUserId === user.id ? user.color : '#e5e5e5' }}
+                    >
+                      {users.length > 1 && (
+                        <button
+                          onClick={e => deleteUser(user.id, e)}
+                          className="absolute top-2 right-2 w-6 h-6 flex items-center justify-center rounded-full bg-neutral-100 text-neutral-400 hover:bg-red-100 hover:text-red-500 text-xs transition-colors"
+                        >✕</button>
+                      )}
+                      <div
+                        className="w-16 h-16 mx-auto rounded-full mb-3"
+                        style={{ backgroundColor: user.color }}
+                      />
+                      <h3 className="font-bold truncate">{user.name}</h3>
+                    </div>
+                  ))}
+
+                  {users.length < 6 && (
+                    <div className="p-6 rounded-2xl border-2 border-dashed border-neutral-300 flex flex-col items-center justify-center gap-3">
+                      <div className="w-12 h-12 rounded-full bg-neutral-100 flex items-center justify-center text-neutral-400 text-2xl select-none">+</div>
+                      <input
+                        type="text"
+                        value={newUserName}
+                        onChange={e => setNewUserName(e.target.value)}
+                        onKeyDown={e => e.key === 'Enter' && addUser()}
+                        placeholder="Nuevo Nombre..."
+                        className="w-full text-center text-sm font-bold bg-transparent border-b border-neutral-300 pb-1"
+                        style={{ outline:'none' }}
+                        onFocus={e => e.target.style.borderColor='#171717'}
+                        onBlur={e  => e.target.style.borderColor='#d4d4d4'}
+                      />
+                      <button
+                        onClick={addUser}
+                        className="text-xs font-bold px-4 py-1.5 bg-neutral-900 text-white rounded-full hover:bg-neutral-700 transition-colors"
+                      >Crear</button>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* ══ GRUPOS ══════════════════════════════════════════════════════ */}
+            {activeTab === 'grupos' && (
+              <div className="space-y-6 card-enter">
+                {/* Selector de grupo */}
+                <div className="flex flex-wrap justify-center gap-2 mb-8">
+                  {Object.keys(INITIAL_GROUPS).map(group => (
+                    <button
+                      key={group}
+                      onClick={() => setActiveGroup(group)}
+                      className="w-12 h-12 flex items-center justify-center rounded-xl text-lg font-black transition-all"
+                      style={activeGroup === group
+                        ? { backgroundColor: activeUser.color, color:'white', transform:'scale(1.1)' }
+                        : { backgroundColor:'#f5f5f5', color:'#a3a3a3' }}
+                    >{group}</button>
+                  ))}
+                </div>
+
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+
+                  {/* Tabla de posiciones */}
+                  <section className="lg:col-span-7">
+                    <div className="flex justify-between items-end mb-4 px-1">
+                      <h2
+                        className="text-2xl font-black"
+                        style={{ fontFamily:"'Barlow Condensed', sans-serif" }}
+                      >Grupo {activeGroup}</h2>
+                      <div className="flex gap-4 text-xs font-bold uppercase tracking-wider">
+                        <span className="flex items-center gap-1">
+                          <div className="w-2 h-2 rounded-full" style={{ backgroundColor: COLORS.green }} />
+                          Avanza
+                        </span>
+                        <span className="flex items-center gap-1">
+                          <div className="w-2 h-2 rounded-full bg-yellow-400" />
+                          Posible
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="bg-white rounded-3xl border border-neutral-200 overflow-hidden shadow-sm">
+                      <table className="w-full text-sm text-left">
+                        <thead className="bg-neutral-50 text-neutral-400 text-xs uppercase font-bold border-b border-neutral-200">
+                          <tr>
+                            <th className="px-6 py-4">Selección</th>
+                            <th className="px-2 py-4 text-center">PJ</th>
+                            <th className="px-2 py-4 text-center">G</th>
+                            <th className="px-2 py-4 text-center">E</th>
+                            <th className="px-2 py-4 text-center">P</th>
+                            <th className="px-2 py-4 text-center">DG</th>
+                            <th className="px-6 py-4 text-center font-black text-neutral-900">PTS</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-neutral-100">
+                          {activeGroupStandings.map((team, index) => {
+                            let indicatorColor = 'transparent';
+                            if (index < 2) indicatorColor = COLORS.green;
+                            else if (index === 2 && qualifiedTeams.bestThirds.some(t => t.name === team.name))
+                              indicatorColor = '#FFB800';
+
+                            return (
+                              <tr key={team.name} className="hover:bg-neutral-50 transition-colors">
+                                <td className="px-6 py-4 font-bold flex items-center gap-3 text-base">
+                                  <div className="w-1.5 h-6 rounded-full shrink-0" style={{ backgroundColor: indicatorColor }} />
+                                  {team.name}
+                                </td>
+                                <td className="px-2 py-4 text-center text-neutral-500 font-medium">{team.pj}</td>
+                                <td className="px-2 py-4 text-center text-neutral-500 font-medium">{team.pg}</td>
+                                <td className="px-2 py-4 text-center text-neutral-500 font-medium">{team.pe}</td>
+                                <td className="px-2 py-4 text-center text-neutral-500 font-medium">{team.pp}</td>
+                                <td className="px-2 py-4 text-center font-bold text-neutral-700">
+                                  {team.dg > 0 ? `+${team.dg}` : team.dg}
+                                </td>
+                                <td className="px-6 py-4 text-center font-black text-xl">{team.pts}</td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+                  </section>
+
+                  {/* Partidos */}
+                  <section className="lg:col-span-5">
+                    <h2 className="text-xl font-bold mb-4 px-1">Partidos</h2>
+                    <div className="space-y-3">
+                      {ALL_MATCHES.filter(m => m.group === activeGroup).map(match => (
+                        <div
+                          key={match.id}
+                          className="flex items-center justify-between p-4 bg-white rounded-2xl shadow-sm border border-neutral-200 hover:border-neutral-300 transition-colors"
+                        >
+                          <div className="flex-1 text-right pr-4 font-bold text-neutral-800 text-base truncate">
+                            {match.team1}
+                          </div>
+                          <div className="flex items-center gap-2 shrink-0 bg-neutral-50 p-1.5 rounded-xl border border-neutral-200">
+                            <input
+                              type="text" inputMode="numeric"
+                              value={currentScores[match.id]?.team1 ?? ''}
+                              onChange={e => handleScoreChange(match.id, 'team1', e.target.value)}
+                              className="w-12 h-12 text-center text-xl font-black bg-white rounded-lg shadow-sm transition-all"
+                              style={{ border:'2px solid transparent' }}
+                              onFocus={e => e.target.style.borderColor = activeUser.color}
+                              onBlur={e  => e.target.style.borderColor = 'transparent'}
+                            />
+                            <span className="text-neutral-300 font-bold text-xs select-none">vs</span>
+                            <input
+                              type="text" inputMode="numeric"
+                              value={currentScores[match.id]?.team2 ?? ''}
+                              onChange={e => handleScoreChange(match.id, 'team2', e.target.value)}
+                              className="w-12 h-12 text-center text-xl font-black bg-white rounded-lg shadow-sm transition-all"
+                              style={{ border:'2px solid transparent' }}
+                              onFocus={e => e.target.style.borderColor = activeUser.color}
+                              onBlur={e  => e.target.style.borderColor = 'transparent'}
+                            />
+                          </div>
+                          <div className="flex-1 text-left pl-4 font-bold text-neutral-800 text-base truncate">
+                            {match.team2}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </section>
+                </div>
+              </div>
+            )}
+
+            {/* ══ ELIMINATORIAS ═══════════════════════════════════════════════ */}
+            {activeTab === 'eliminatorias' && (
+              <div className="space-y-6 card-enter">
+                <div className="flex flex-wrap justify-center gap-2 mb-8 bg-neutral-100 p-2 rounded-2xl max-w-fit mx-auto">
+                  {[
+                    { id:'R32',   label:'16avos'  },
+                    { id:'R16',   label:'Octavos' },
+                    { id:'QF',    label:'Cuartos' },
+                    { id:'SF',    label:'Semis'   },
+                    { id:'FINAL', label:'Final'   },
+                  ].map(round => (
+                    <button
+                      key={round.id}
+                      onClick={() => setActiveKnockoutRound(round.id)}
+                      className="px-5 py-2.5 rounded-xl font-bold text-sm transition-all"
+                      style={activeKnockoutRound === round.id
+                        ? { backgroundColor:'white', color:'#171717', boxShadow:'0 1px 3px rgba(0,0,0,0.1)' }
+                        : { color:'#737373' }}
+                    >{round.label}</button>
+                  ))}
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                  {activeKnockoutRound === 'R32'   && knockoutBracket.R32.map(m => <KnockoutMatchCard key={m.id} match={m} />)}
+                  {activeKnockoutRound === 'R16'   && knockoutBracket.R16.map(m => <KnockoutMatchCard key={m.id} match={m} />)}
+                  {activeKnockoutRound === 'QF'    && knockoutBracket.QF.map(m  => <KnockoutMatchCard key={m.id} match={m} />)}
+                  {activeKnockoutRound === 'SF'    && knockoutBracket.SF.map(m  => (
+                    <div key={m.id} className="lg:col-span-2">
+                      <KnockoutMatchCard match={m} />
+                    </div>
+                  ))}
+                  {activeKnockoutRound === 'FINAL' && knockoutBracket.Final.map(m => (
+                    <div key={m.id} className="md:col-span-2 lg:col-span-4 max-w-2xl mx-auto w-full space-y-4 text-center">
+                      <div
+                        className="inline-block px-4 py-1 rounded-full text-sm font-black uppercase tracking-widest text-white"
+                        style={{ backgroundColor: COLORS.red }}
+                      >La Gran Final</div>
+                      <KnockoutMatchCard match={m} isFinal={true} />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* ══ RESUMEN ═════════════════════════════════════════════════════ */}
+            {activeTab === 'resumen' && (
+              <div className="max-w-md mx-auto zoom-enter">
+                <div
+                  className="relative bg-white rounded-[2.5rem] shadow-2xl overflow-hidden border border-neutral-100 flex flex-col"
+                  style={{ aspectRatio:'4/5' }}
+                >
+                  {/* Fondos decorativos — CORREGIDOS */}
+                  <div
+                    className="absolute top-0 right-0 w-64 h-64 rounded-bl-full pointer-events-none"
+                    style={{ background:`linear-gradient(to bottom left, ${activeUser.color}44, transparent)` }}
+                  />
+                  <div
+                    className="absolute -bottom-20 -left-20 w-80 h-80 rounded-full pointer-events-none"
+                    style={{ backgroundColor: activeUser.color, opacity: 0.1 }}
+                  />
+
+                  <div className="p-8 flex-1 flex flex-col relative z-10">
+                    {/* Header tarjeta */}
+                    <div className="flex justify-between items-start mb-8">
+                      <div>
+                        <p className="text-xs font-bold uppercase tracking-widest text-neutral-400 mb-1">
+                          Predicción Oficial 2026
+                        </p>
+                        <h2
+                          className="text-3xl font-black leading-none"
+                          style={{ color: activeUser.color, fontFamily:"'Barlow Condensed', sans-serif" }}
+                        >{activeUser.name}</h2>
+                      </div>
+                      <div
+                        className="w-10 h-10 rounded-full flex items-center justify-center text-white font-black text-xl shrink-0"
+                        style={{ backgroundColor: activeUser.color }}
+                      >
+                        {activeUser.name.charAt(0).toUpperCase()}
+                      </div>
+                    </div>
+
+                    {/* Campeón */}
+                    <div className="text-center flex-1 flex flex-col items-center justify-center">
+                      <p className="text-sm font-bold uppercase tracking-widest text-neutral-400 mb-3">
+                        Mi Campeón
+                      </p>
+                      <h1
+                        className="text-6xl font-black uppercase tracking-tighter"
+                        style={{ color: COLORS.dark, fontFamily:"'Barlow Condensed', sans-serif" }}
+                      >{knockoutBracket.Champion}</h1>
+                      {knockoutBracket.Champion !== '???' && (
+                        <div className="mt-5 inline-flex items-center gap-2 px-4 py-2 bg-neutral-900 text-white rounded-full font-bold text-sm">
+                          {React.createElement(IconTrophy, { size:15 })}
+                          ¡Levanta la copa!
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Semifinalistas */}
+                    <div className="mt-auto bg-neutral-50 rounded-2xl p-4 border border-neutral-100">
+                      <h3 className="text-xs font-bold uppercase tracking-widest text-neutral-400 mb-3 text-center">
+                        Semifinalistas
+                      </h3>
+                      <div className="grid grid-cols-2 gap-3">
+                        <div className="space-y-2">
+                          <div className="bg-white px-3 py-2 rounded-xl text-sm font-bold shadow-sm border border-neutral-100 truncate text-center">
+                            {knockoutBracket.SF[0]?.t1 || '???'}
+                          </div>
+                          <div className="bg-white px-3 py-2 rounded-xl text-sm font-bold shadow-sm border border-neutral-100 truncate text-center">
+                            {knockoutBracket.SF[0]?.t2 || '???'}
+                          </div>
+                        </div>
+                        <div className="space-y-2">
+                          <div className="bg-white px-3 py-2 rounded-xl text-sm font-bold shadow-sm border border-neutral-100 truncate text-center">
+                            {knockoutBracket.SF[1]?.t1 || '???'}
+                          </div>
+                          <div className="bg-white px-3 py-2 rounded-xl text-sm font-bold shadow-sm border border-neutral-100 truncate text-center">
+                            {knockoutBracket.SF[1]?.t2 || '???'}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <p className="mt-6 text-center text-sm text-neutral-500">
+                  Toma una captura de pantalla y compártela con tus amigos.
+                </p>
+              </div>
+            )}
+
+          </main>
+        </div>
+      );
+    }
+
+    ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+  </script>
+</body>
+</html>
