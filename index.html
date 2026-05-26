@@ -4,702 +4,706 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Predicciones Mundial 2026</title>
-  <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-  <script src="https://cdn.tailwindcss.com"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;700;900&family=Barlow:wght@400;500;700&display=swap" rel="stylesheet" />
   <style>
-    *, *::before, *::after { box-sizing: border-box; }
-    html, body { margin: 0; padding: 0; background: #ffffff; }
-    body { font-family: 'Barlow', sans-serif; }
-
-    .card-enter { animation: cardEnter 0.35s cubic-bezier(.22,1,.36,1) both; }
-    @keyframes cardEnter {
-      from { opacity: 0; transform: translateY(18px); }
-      to   { opacity: 1; transform: none; }
-    }
-    .zoom-enter { animation: zoomEnter 0.4s cubic-bezier(.22,1,.36,1) both; }
-    @keyframes zoomEnter {
-      from { opacity: 0; transform: scale(0.96); }
-      to   { opacity: 1; transform: scale(1); }
-    }
-
-    /* Scrollbar minimalista */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { background: #fff; font-family: 'Barlow', sans-serif; color: #1a1a1a; min-height: 100vh; }
     ::-webkit-scrollbar { width: 4px; height: 4px; }
-    ::-webkit-scrollbar-track { background: transparent; }
     ::-webkit-scrollbar-thumb { background: #d4d4d4; border-radius: 4px; }
 
-    /* Focus ring personalizado vía clase JS */
-    input:focus { outline: none; }
+    /* ── Animaciones ── */
+    @keyframes cardEnter { from { opacity:0; transform:translateY(16px); } to { opacity:1; transform:none; } }
+    @keyframes zoomEnter { from { opacity:0; transform:scale(.96); }       to { opacity:1; transform:scale(1); } }
+    .card-enter { animation: cardEnter .35s cubic-bezier(.22,1,.36,1) both; }
+    .zoom-enter { animation: zoomEnter .4s  cubic-bezier(.22,1,.36,1) both; }
 
-    /* Ocultar flechas en inputs numéricos */
-    input[type=number]::-webkit-inner-spin-button,
-    input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+    /* ── Layout base ── */
+    .page { min-height:100vh; }
+
+    /* ── Header ── */
+    .header {
+      position: sticky; top: 0; z-index: 50;
+      background: rgba(255,255,255,.92);
+      backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+      border-bottom: 1px solid #f0f0f0;
+      padding: 12px 16px;
+    }
+    .header-inner {
+      max-width: 1200px; margin: 0 auto;
+      display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 12px;
+    }
+    .logo { display:flex; align-items:center; gap:10px; }
+    .logo-dot { width:32px; height:32px; border-radius:50%; background: linear-gradient(135deg,#6820C9,#0059C8); flex-shrink:0; }
+    .logo h1 { font-family:'Barlow Condensed',sans-serif; font-size:1.2rem; font-weight:900; letter-spacing:-.03em; }
+
+    /* ── Nav tabs ── */
+    .nav-tabs { display:flex; gap:4px; background:#f5f5f5; padding:4px; border-radius:999px; overflow-x:auto; }
+    .nav-tab {
+      padding:8px 14px; border-radius:999px; font-size:.8rem; font-weight:700;
+      white-space:nowrap; border:none; cursor:pointer; background:transparent;
+      color:#737373; transition:all .2s; display:flex; align-items:center; gap:5px;
+    }
+    .nav-tab.active { background:#fff; color:#6820C9; box-shadow:0 1px 4px rgba(0,0,0,.12); }
+
+    /* ── Main container ── */
+    main { max-width:1200px; margin:0 auto; padding:24px 16px 48px; }
+
+    /* ── PERFILES ── */
+    .profiles-wrap { max-width:640px; margin:0 auto; text-align:center; }
+    .profiles-title { font-family:'Barlow Condensed',sans-serif; font-size:3rem; font-weight:900; letter-spacing:-.04em; margin-bottom:8px; }
+    .profiles-sub { color:#737373; margin-bottom:32px; }
+    .profiles-grid { display:grid; grid-template-columns:repeat(2,1fr); gap:16px; }
+    @media(min-width:480px){ .profiles-grid { grid-template-columns:repeat(3,1fr); } }
+    .profile-card {
+      position:relative; padding:24px 16px; border-radius:20px; border:2px solid #e5e5e5;
+      cursor:pointer; transition:transform .2s, border-color .2s;
+    }
+    .profile-card:hover { transform:scale(1.04); }
+    .profile-avatar { width:64px; height:64px; border-radius:50%; margin:0 auto 12px; }
+    .profile-name { font-weight:700; font-size:.95rem; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .profile-delete {
+      position:absolute; top:8px; right:8px; width:24px; height:24px;
+      border-radius:50%; border:none; background:#f5f5f5; color:#a3a3a3;
+      font-size:.7rem; cursor:pointer; display:flex; align-items:center; justify-content:center;
+      transition:background .2s, color .2s;
+    }
+    .profile-delete:hover { background:#fee2e2; color:#ef4444; }
+    .profile-add {
+      padding:24px 16px; border-radius:20px; border:2px dashed #d4d4d4;
+      display:flex; flex-direction:column; align-items:center; gap:10px;
+    }
+    .profile-add-icon { width:48px; height:48px; border-radius:50%; background:#f5f5f5; color:#a3a3a3; font-size:1.5rem; display:flex; align-items:center; justify-content:center; }
+    .profile-add input {
+      width:100%; text-align:center; font-size:.85rem; font-weight:700;
+      background:transparent; border:none; border-bottom:1px solid #d4d4d4; padding-bottom:4px; outline:none;
+      font-family:'Barlow',sans-serif;
+    }
+    .profile-add input:focus { border-bottom-color:#1a1a1a; }
+    .btn-create {
+      font-size:.75rem; font-weight:700; padding:6px 14px;
+      background:#1a1a1a; color:#fff; border:none; border-radius:999px; cursor:pointer;
+      transition:background .2s;
+    }
+    .btn-create:hover { background:#404040; }
+
+    /* ── GRUPOS ── */
+    .group-tabs { display:flex; flex-wrap:wrap; justify-content:center; gap:8px; margin-bottom:32px; }
+    .group-tab {
+      width:48px; height:48px; border-radius:12px; border:none;
+      font-size:1.1rem; font-weight:900; cursor:pointer;
+      background:#f5f5f5; color:#a3a3a3; transition:all .2s;
+      font-family:'Barlow Condensed',sans-serif;
+    }
+    .group-tab.active { color:#fff; transform:scale(1.1); }
+
+    .groups-layout { display:grid; gap:32px; }
+    @media(min-width:1024px){ .groups-layout { grid-template-columns:7fr 5fr; } }
+
+    .section-title { font-family:'Barlow Condensed',sans-serif; font-size:1.5rem; font-weight:900; margin-bottom:16px; }
+    .section-title-sm { font-size:1.1rem; font-weight:700; margin-bottom:16px; }
+
+    .legend { display:flex; gap:16px; font-size:.7rem; font-weight:700; text-transform:uppercase; letter-spacing:.06em; }
+    .legend-dot { width:8px; height:8px; border-radius:50%; display:inline-block; }
+
+    /* Tabla */
+    .standings-card { background:#fff; border-radius:24px; border:1px solid #e5e5e5; overflow:hidden; box-shadow:0 1px 4px rgba(0,0,0,.06); }
+    .standings-header { display:flex; justify-content:space-between; align-items:flex-end; margin-bottom:16px; }
+    table { width:100%; border-collapse:collapse; font-size:.85rem; }
+    thead th { background:#fafafa; color:#a3a3a3; font-size:.7rem; font-weight:700; text-transform:uppercase; letter-spacing:.06em; padding:14px 8px; border-bottom:1px solid #f0f0f0; }
+    thead th:first-child { padding-left:24px; text-align:left; }
+    thead th:last-child { padding-right:24px; color:#1a1a1a; }
+    tbody td { padding:14px 8px; text-align:center; color:#737373; font-weight:500; border-bottom:1px solid #f7f7f7; }
+    tbody td:first-child { padding-left:24px; text-align:left; font-weight:700; color:#1a1a1a; font-size:1rem; display:flex; align-items:center; gap:10px; }
+    tbody td:last-child { padding-right:24px; font-weight:900; font-size:1.2rem; color:#1a1a1a; }
+    tbody tr:last-child td { border-bottom:none; }
+    tbody tr:hover td { background:#fafafa; }
+    .indicator { width:6px; height:24px; border-radius:3px; flex-shrink:0; }
+
+    /* Partidos */
+    .match-card {
+      display:flex; align-items:center; justify-content:space-between;
+      padding:14px 16px; background:#fff; border-radius:18px;
+      border:1px solid #e5e5e5; margin-bottom:10px;
+      box-shadow:0 1px 3px rgba(0,0,0,.05); transition:border-color .2s;
+    }
+    .match-card:hover { border-color:#d4d4d4; }
+    .match-team { flex:1; font-weight:700; font-size:.95rem; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .match-team.right { text-align:right; padding-right:12px; }
+    .match-team.left  { text-align:left;  padding-left:12px; }
+    .score-wrap { display:flex; align-items:center; gap:6px; background:#fafafa; padding:6px; border-radius:12px; border:1px solid #e5e5e5; flex-shrink:0; }
+    .score-input {
+      width:48px; height:48px; text-align:center; font-size:1.2rem; font-weight:900;
+      background:#fff; border-radius:10px; border:2px solid transparent;
+      font-family:'Barlow',sans-serif; outline:none; transition:border-color .15s;
+      box-shadow:0 1px 3px rgba(0,0,0,.07);
+    }
+    .vs-sep { color:#d4d4d4; font-weight:700; font-size:.75rem; }
+
+    /* ── ELIMINATORIAS ── */
+    .round-tabs { display:flex; gap:4px; background:#f5f5f5; padding:8px; border-radius:16px; width:fit-content; margin:0 auto 32px; flex-wrap:wrap; justify-content:center; }
+    .round-tab {
+      padding:10px 18px; border-radius:12px; font-size:.85rem; font-weight:700;
+      border:none; cursor:pointer; background:transparent; color:#737373;
+      transition:all .2s; font-family:'Barlow',sans-serif;
+    }
+    .round-tab.active { background:#fff; color:#1a1a1a; box-shadow:0 1px 3px rgba(0,0,0,.1); }
+    .knockout-grid { display:grid; grid-template-columns:1fr; gap:16px; }
+    @media(min-width:640px)  { .knockout-grid { grid-template-columns:repeat(2,1fr); } }
+    @media(min-width:1024px) { .knockout-grid { grid-template-columns:repeat(4,1fr); } }
+    .ko-match {
+      background:#fff; border-radius:16px; border:1px solid #e5e5e5;
+      padding:16px; box-shadow:0 1px 3px rgba(0,0,0,.06);
+    }
+    .ko-match.final-match { border-width:2px; }
+    .ko-match.disabled { opacity:.55; }
+    .ko-row { display:flex; justify-content:space-between; align-items:center; gap:8px; }
+    .ko-team { font-weight:700; font-size:.95rem; flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .ko-inputs { display:flex; gap:4px; align-items:center; }
+    .ko-score {
+      width:40px; height:40px; text-align:center; font-size:1.1rem; font-weight:900;
+      background:#f5f5f5; border-radius:8px; border:2px solid transparent;
+      font-family:'Barlow',sans-serif; outline:none; transition:box-shadow .15s;
+    }
+    .ko-pen {
+      width:32px; height:32px; text-align:center; font-size:.8rem; font-weight:700;
+      color:#fff; border-radius:6px; border:none;
+      font-family:'Barlow',sans-serif; outline:none;
+    }
+    .ko-divider { height:1px; background:#f0f0f0; margin:10px 0; }
+    .final-label {
+      display:inline-block; padding:4px 14px; border-radius:999px;
+      font-size:.75rem; font-weight:900; text-transform:uppercase; letter-spacing:.1em;
+      color:#fff; background:#EA323D; margin-bottom:12px;
+    }
+    .ko-full { grid-column:1/-1; max-width:500px; margin:0 auto; width:100%; text-align:center; }
+    .ko-half { grid-column:1/-1; }
+    @media(min-width:1024px){ .ko-half { grid-column:span 2; } }
+
+    /* ── RESUMEN ── */
+    .card-wrap { max-width:400px; margin:0 auto; }
+    .summary-card {
+      position:relative; background:#fff; border-radius:40px;
+      border:1px solid #e5e5e5; overflow:hidden;
+      aspect-ratio:4/5; display:flex; flex-direction:column;
+      box-shadow:0 20px 60px rgba(0,0,0,.1);
+    }
+    .card-bg1 { position:absolute; top:0; right:0; width:256px; height:256px; border-bottom-left-radius:50%; pointer-events:none; }
+    .card-bg2 { position:absolute; bottom:-80px; left:-80px; width:320px; height:320px; border-radius:50%; opacity:.1; pointer-events:none; }
+    .card-inner { padding:32px; flex:1; display:flex; flex-direction:column; position:relative; z-index:1; }
+    .card-header { display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:32px; }
+    .card-label { font-size:.65rem; font-weight:700; text-transform:uppercase; letter-spacing:.1em; color:#a3a3a3; margin-bottom:4px; }
+    .card-username { font-family:'Barlow Condensed',sans-serif; font-size:2rem; font-weight:900; line-height:1; }
+    .card-avatar { width:40px; height:40px; border-radius:50%; display:flex; align-items:center; justify-content:center; color:#fff; font-weight:900; font-size:1.1rem; flex-shrink:0; }
+    .card-champion { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; }
+    .champ-label { font-size:.75rem; font-weight:700; text-transform:uppercase; letter-spacing:.1em; color:#a3a3a3; margin-bottom:12px; }
+    .champ-name { font-family:'Barlow Condensed',sans-serif; font-size:3.5rem; font-weight:900; text-transform:uppercase; letter-spacing:-.04em; color:#1a1a1a; }
+    .champ-badge { display:inline-flex; align-items:center; gap:6px; padding:8px 16px; background:#1a1a1a; color:#fff; border-radius:999px; font-weight:700; font-size:.8rem; margin-top:16px; }
+    .semis-box { background:#fafafa; border-radius:16px; padding:16px; border:1px solid #f0f0f0; }
+    .semis-label { font-size:.65rem; font-weight:700; text-transform:uppercase; letter-spacing:.1em; color:#a3a3a3; text-align:center; margin-bottom:12px; }
+    .semis-grid { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+    .semi-team { background:#fff; padding:8px 10px; border-radius:12px; font-size:.8rem; font-weight:700; text-align:center; border:1px solid #f0f0f0; box-shadow:0 1px 2px rgba(0,0,0,.04); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .card-note { text-align:center; color:#a3a3a3; font-size:.8rem; margin-top:20px; }
   </style>
 </head>
 <body>
-  <div id="root"></div>
+<div id="app"></div>
 
-  <script type="text/babel">
-    const { useState, useMemo, useCallback } = React;
+<script>
+// ─── DATOS ────────────────────────────────────────────────────────────────────
+const GROUPS = {
+  A:['México','Sudáfrica','Corea','Chequia'],
+  B:['Canadá','Bosnia','Qatar','Suiza'],
+  C:['Brasil','Marruecos','Haití','Escocia'],
+  D:['EE.UU.','Paraguay','Australia','Turquía'],
+  E:['Alemania','Curazao','C. Marfil','Ecuador'],
+  F:['P. Bajos','Japón','Suecia','Túnez'],
+  G:['Bélgica','Egipto','Irán','N. Zelanda'],
+  H:['España','Cabo Verde','Arabia S.','Uruguay'],
+  I:['Francia','Senegal','Irak','Noruega'],
+  J:['Argentina','Argelia','Austria','Jordania'],
+  K:['Portugal','RD Congo','Uzbekistán','Colombia'],
+  L:['Inglaterra','Croacia','Ghana','Panamá']
+};
+const GROUP_KEYS = Object.keys(GROUPS);
 
-    // ─── DATOS ────────────────────────────────────────────────────────────────
-    const INITIAL_GROUPS = {
-      'A': ['México',       'Sudáfrica',  'Corea',      'Chequia'],
-      'B': ['Canadá',       'Bosnia',     'Qatar',       'Suiza'],
-      'C': ['Brasil',       'Marruecos',  'Haití',       'Escocia'],
-      'D': ['EE.UU.',       'Paraguay',   'Australia',   'Turquía'],
-      'E': ['Alemania',     'Curazao',    'C. de Marfil','Ecuador'],
-      'F': ['Países Bajos', 'Japón',      'Suecia',      'Túnez'],
-      'G': ['Bélgica',      'Egipto',     'Irán',        'N. Zelanda'],
-      'H': ['España',       'Cabo Verde', 'Arabia S.',   'Uruguay'],
-      'I': ['Francia',      'Senegal',    'Irak',        'Noruega'],
-      'J': ['Argentina',    'Argelia',    'Austria',     'Jordania'],
-      'K': ['Portugal',     'RD Congo',   'Uzbekistán',  'Colombia'],
-      'L': ['Inglaterra',   'Croacia',    'Ghana',       'Panamá'],
-    };
+const PAIRS = [[0,1],[2,3],[0,2],[3,1],[3,0],[1,2]];
+const ALL_MATCHES = (() => {
+  let id=1, out=[];
+  GROUP_KEYS.forEach(g => PAIRS.forEach(([a,b]) => out.push({id:id++,g,t1:GROUPS[g][a],t2:GROUPS[g][b]})));
+  return out;
+})();
 
-    const generateMatches = () => {
-      const matches = [];
-      let id = 1;
-      const pairs = [[0,1],[2,3],[0,2],[3,1],[3,0],[1,2]];
-      Object.entries(INITIAL_GROUPS).forEach(([group, teams]) => {
-        pairs.forEach(([a, b]) => {
-          matches.push({ id: id++, group, team1: teams[a], team2: teams[b] });
-        });
-      });
-      return matches;
-    };
-    const ALL_MATCHES = generateMatches();
+const C = { violet:'#6820C9', green:'#11A653', red:'#EA323D', blue:'#0059C8' };
+const USER_COLORS = [C.violet,C.green,C.blue,C.red,'#FF8A00','#00D1FF'];
 
-    const COLORS = {
-      violet: '#6820C9',
-      green:  '#11A653',
-      red:    '#EA323D',
-      blue:   '#0059C8',
-      dark:   '#1A1A1A',
-    };
-    const USER_COLORS = [COLORS.violet, COLORS.green, COLORS.blue, COLORS.red, '#FF8A00', '#00D1FF'];
+// ─── STATE ────────────────────────────────────────────────────────────────────
+let state = {
+  tab: 'perfiles',
+  users: [{ id:1, name:'Usuario 1', color:USER_COLORS[0], sc:{}, ks:{} }],
+  uid: 1,
+  newName: '',
+  group: 'A',
+  round: 'R32'
+};
 
-    // ─── SVG ICONS (sin dependencia externa) ──────────────────────────────────
-    const IconUsers = ({ size = 16 }) => (
-      <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/>
-        <path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>
-      </svg>
-    );
-    const IconTrophy = ({ size = 16 }) => (
-      <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <polyline points="8 21 12 17 16 21"/><line x1="12" y1="17" x2="12" y2="11"/>
-        <path d="M7 4H17l-1 7a5 5 0 0 1-10 0L7 4Z"/>
-        <path d="M5 4H3a2 2 0 0 0 0 4h2"/><path d="M19 4h2a2 2 0 0 0 0 4h-2"/>
-      </svg>
-    );
+function setState(patch) {
+  Object.assign(state, typeof patch === 'function' ? patch(state) : patch);
+  render();
+}
 
-    // ─── UTILIDADES ────────────────────────────────────────────────────────────
-    const getStandingsForGroup = (groupName, scoresData) => {
-      const teams = INITIAL_GROUPS[groupName];
-      const table = teams.map(name => ({
-        name, pj:0, pg:0, pe:0, pp:0, gf:0, gc:0, dg:0, pts:0, group: groupName
-      }));
-      ALL_MATCHES
-        .filter(m => m.group === groupName)
-        .forEach(match => {
-          const ms = scoresData[match.id];
-          if (!ms || ms.team1 === undefined || ms.team1 === '' || ms.team2 === undefined || ms.team2 === '') return;
-          const g1 = parseInt(ms.team1), g2 = parseInt(ms.team2);
-          const t1 = table.find(t => t.name === match.team1);
-          const t2 = table.find(t => t.name === match.team2);
-          t1.pj++; t2.pj++;
-          t1.gf += g1; t1.gc += g2;
-          t2.gf += g2; t2.gc += g1;
-          if      (g1 > g2) { t1.pts += 3; t1.pg++; t2.pp++; }
-          else if (g2 > g1) { t2.pts += 3; t2.pg++; t1.pp++; }
-          else              { t1.pts++;   t2.pts++;  t1.pe++; t2.pe++; }
-        });
-      table.forEach(t => t.dg = t.gf - t.gc);
-      table.sort((a, b) => b.pts - a.pts || b.dg - a.dg || b.gf - a.gf);
-      return table;
-    };
+// ─── HELPERS ─────────────────────────────────────────────────────────────────
+function activeUser() { return state.users.find(u=>u.id===state.uid) || state.users[0]; }
 
-    const getWinner = (matchId, t1, t2, ks) => {
-      const s = ks[matchId];
-      if (!s || s.g1 === undefined || s.g1 === '' || s.g2 === undefined || s.g2 === '') return '???';
-      const g1 = parseInt(s.g1), g2 = parseInt(s.g2);
-      if (g1 > g2) return t1;
-      if (g2 > g1) return t2;
-      const p1 = parseInt(s.p1 || '0'), p2 = parseInt(s.p2 || '0');
-      if (p1 > p2) return t1;
-      if (p2 > p1) return t2;
-      return '???';
-    };
+function standings(g, sc) {
+  const teams = GROUPS[g].map(name=>({name,pj:0,pg:0,pe:0,pp:0,gf:0,gc:0,dg:0,pts:0,g}));
+  ALL_MATCHES.filter(m=>m.g===g).forEach(m=>{
+    const ms=sc[m.id];
+    if(!ms||ms.t1===''||ms.t1===undefined||ms.t2===''||ms.t2===undefined) return;
+    const g1=+ms.t1, g2=+ms.t2;
+    const a=teams.find(t=>t.name===m.t1), b=teams.find(t=>t.name===m.t2);
+    a.pj++;b.pj++;a.gf+=g1;a.gc+=g2;b.gf+=g2;b.gc+=g1;
+    if(g1>g2){a.pts+=3;a.pg++;b.pp++;}
+    else if(g2>g1){b.pts+=3;b.pg++;a.pp++;}
+    else{a.pts++;b.pts++;a.pe++;b.pe++;}
+  });
+  teams.forEach(t=>t.dg=t.gf-t.gc);
+  return teams.sort((a,b)=>b.pts-a.pts||b.dg-a.dg||b.gf-a.gf);
+}
 
-    // ─── APP ──────────────────────────────────────────────────────────────────
-    function App() {
-      const [activeTab, setActiveTab] = useState('perfiles');
-      const [users, setUsers] = useState([
-        { id: 1, name: 'Usuario 1', color: USER_COLORS[0], scores: {}, knockoutScores: {} }
-      ]);
-      const [activeUserId, setActiveUserId]           = useState(1);
-      const [newUserName, setNewUserName]             = useState('');
-      const [activeGroup, setActiveGroup]             = useState('A');
-      const [activeKnockoutRound, setActiveKnockoutRound] = useState('R32');
+function allStandings(sc) {
+  const r={};
+  GROUP_KEYS.forEach(g=>r[g]=standings(g,sc));
+  return r;
+}
 
-      const activeUser = users.find(u => u.id === activeUserId) || users[0];
-      const currentScores        = activeUser?.scores        || {};
-      const currentKnockoutScores = activeUser?.knockoutScores || {};
+function qualified(sc) {
+  const st=allStandings(sc);
+  const firsts=[],seconds=[],thirds=[];
+  Object.values(st).forEach(t=>{firsts.push(t[0]);seconds.push(t[1]);thirds.push(t[2]);});
+  thirds.sort((a,b)=>b.pts-a.pts||b.dg-a.dg||b.gf-a.gf);
+  return {firsts,seconds,best8:thirds.slice(0,8),st};
+}
 
-      // Usuarios
-      const addUser = () => {
-        if (users.length >= 6) return;
-        const name = newUserName.trim() || `Usuario ${users.length + 1}`;
-        const newUser = {
-          id: Date.now(),
-          name,
-          color: USER_COLORS[users.length % USER_COLORS.length],
-          scores: {},
-          knockoutScores: {},
-        };
-        setUsers(prev => [...prev, newUser]);
-        setNewUserName('');
-        setActiveUserId(newUser.id);
-        setActiveTab('grupos');
-      };
+function winner(id,t1,t2,ks) {
+  const s=ks[id];
+  if(!s||s.g1===undefined||s.g1===''||s.g2===undefined||s.g2==='') return '???';
+  const g1=+s.g1,g2=+s.g2;
+  if(g1>g2) return t1; if(g2>g1) return t2;
+  const p1=+(s.p1||0),p2=+(s.p2||0);
+  if(p1>p2) return t1; if(p2>p1) return t2;
+  return '???';
+}
 
-      const deleteUser = (id, e) => {
-        e.stopPropagation();
-        setUsers(prev => {
-          const filtered = prev.filter(u => u.id !== id);
-          if (filtered.length === 0) {
-            return [{ id: Date.now(), name: 'Usuario 1', color: USER_COLORS[0], scores: {}, knockoutScores: {} }];
-          }
-          return filtered;
-        });
-        if (activeUserId === id) {
-          const remaining = users.filter(u => u.id !== id);
-          setActiveUserId(remaining.length > 0 ? remaining[0].id : users[0].id);
-        }
-      };
+function bracket(sc,ks) {
+  const {firsts,seconds,best8}=qualified(sc);
+  const tn=(a,i)=>a[i]?a[i].name:'???';
+  const gw=(id,t1,t2)=>winner(id,t1,t2,ks);
 
-      const updateUserData = (field, matchId, subfield, value) => {
-        if (value !== '' && !/^\d+$/.test(value)) return;
-        setUsers(prev => prev.map(user => {
-          if (user.id !== activeUserId) return user;
-          return {
-            ...user,
-            [field]: {
-              ...user[field],
-              [matchId]: { ...(user[field][matchId] || {}), [subfield]: value }
-            }
-          };
-        }));
-      };
+  const R32=[
+    {id:'R32-1', t1:tn(firsts,0), t2:tn(best8,0)},
+    {id:'R32-2', t1:tn(firsts,1), t2:tn(best8,1)},
+    {id:'R32-3', t1:tn(firsts,2), t2:tn(best8,2)},
+    {id:'R32-4', t1:tn(firsts,3), t2:tn(best8,3)},
+    {id:'R32-5', t1:tn(firsts,4), t2:tn(best8,4)},
+    {id:'R32-6', t1:tn(firsts,5), t2:tn(best8,5)},
+    {id:'R32-7', t1:tn(firsts,6), t2:tn(best8,6)},
+    {id:'R32-8', t1:tn(firsts,7), t2:tn(best8,7)},
+    {id:'R32-9', t1:tn(firsts,8), t2:tn(seconds,0)},
+    {id:'R32-10',t1:tn(firsts,9), t2:tn(seconds,1)},
+    {id:'R32-11',t1:tn(firsts,10),t2:tn(seconds,2)},
+    {id:'R32-12',t1:tn(firsts,11),t2:tn(seconds,3)},
+    {id:'R32-13',t1:tn(seconds,4),t2:tn(seconds,8)},
+    {id:'R32-14',t1:tn(seconds,5),t2:tn(seconds,9)},
+    {id:'R32-15',t1:tn(seconds,6),t2:tn(seconds,10)},
+    {id:'R32-16',t1:tn(seconds,7),t2:tn(seconds,11)},
+  ];
+  const R16=Array.from({length:8},(_,i)=>({id:`R16-${i+1}`,t1:gw(R32[i*2].id,R32[i*2].t1,R32[i*2].t2),t2:gw(R32[i*2+1].id,R32[i*2+1].t1,R32[i*2+1].t2)}));
+  const QF=Array.from({length:4},(_,i)=>({id:`QF-${i+1}`,t1:gw(R16[i*2].id,R16[i*2].t1,R16[i*2].t2),t2:gw(R16[i*2+1].id,R16[i*2+1].t1,R16[i*2+1].t2)}));
+  const SF=Array.from({length:2},(_,i)=>({id:`SF-${i+1}`,t1:gw(QF[i*2].id,QF[i*2].t1,QF[i*2].t2),t2:gw(QF[i*2+1].id,QF[i*2+1].t1,QF[i*2+1].t2)}));
+  const Final=[{id:'FINAL',t1:gw(SF[0].id,SF[0].t1,SF[0].t2),t2:gw(SF[1].id,SF[1].t1,SF[1].t2)}];
+  const champ=gw('FINAL',Final[0].t1,Final[0].t2);
+  return {R32,R16,QF,SF,Final,champ};
+}
 
-      const handleScoreChange    = (matchId, team, value)  => updateUserData('scores',        matchId, team,  value);
-      const handleKnockoutScore  = (matchId, field, value) => updateUserData('knockoutScores', matchId, field, value);
+// ─── ACTIONS ─────────────────────────────────────────────────────────────────
+function addUser() {
+  if(state.users.length>=6) return;
+  const name=state.newName.trim()||`Usuario ${state.users.length+1}`;
+  const nu={id:Date.now(),name,color:USER_COLORS[state.users.length%6],sc:{},ks:{}};
+  setState(s=>({users:[...s.users,nu],uid:nu.id,newName:'',tab:'grupos'}));
+}
 
-      // Standings
-      const globalStandings = useMemo(() => {
-        const all = {};
-        Object.keys(INITIAL_GROUPS).forEach(g => { all[g] = getStandingsForGroup(g, currentScores); });
-        return all;
-      }, [currentScores]);
+function deleteUser(id,e) {
+  e.stopPropagation();
+  setState(s=>{
+    let users=s.users.filter(u=>u.id!==id);
+    if(!users.length) users=[{id:Date.now(),name:'Usuario 1',color:USER_COLORS[0],sc:{},ks:{}}];
+    const uid=s.uid===id?users[0].id:s.uid;
+    return {users,uid};
+  });
+}
 
-      const qualifiedTeams = useMemo(() => {
-        const firsts = [], seconds = [], thirds = [];
-        Object.values(globalStandings).forEach(table => {
-          firsts.push(table[0]); seconds.push(table[1]); thirds.push(table[2]);
-        });
-        thirds.sort((a, b) => b.pts - a.pts || b.dg - a.dg || b.gf - a.gf);
-        return { firsts, seconds, bestThirds: thirds.slice(0, 8) };
-      }, [globalStandings]);
+function setScore(matchId,field,val) {
+  if(val!==''&&!/^\d+$/.test(val)) return;
+  setState(s=>({
+    users:s.users.map(u=>u.id!==s.uid?u:{
+      ...u, sc:{...u.sc,[matchId]:{...(u.sc[matchId]||{}),[field]:val}}
+    })
+  }));
+}
 
-      // Bracket
-      const knockoutBracket = useMemo(() => {
-        const { firsts, seconds, bestThirds } = qualifiedTeams;
-        const tn = (arr, i) => arr[i] ? arr[i].name : '???';
-        const gw = (id, t1, t2) => getWinner(id, t1, t2, currentKnockoutScores);
+function setKS(matchId,field,val) {
+  if(val!==''&&!/^\d+$/.test(val)) return;
+  setState(s=>({
+    users:s.users.map(u=>u.id!==s.uid?u:{
+      ...u, ks:{...u.ks,[matchId]:{...(u.ks[matchId]||{}),[field]:val}}
+    })
+  }));
+}
 
-        const R32 = [
-          { id:'R32-1',  t1:tn(firsts,0),  t2:tn(bestThirds,0) },
-          { id:'R32-2',  t1:tn(firsts,1),  t2:tn(bestThirds,1) },
-          { id:'R32-3',  t1:tn(firsts,2),  t2:tn(bestThirds,2) },
-          { id:'R32-4',  t1:tn(firsts,3),  t2:tn(bestThirds,3) },
-          { id:'R32-5',  t1:tn(firsts,4),  t2:tn(bestThirds,4) },
-          { id:'R32-6',  t1:tn(firsts,5),  t2:tn(bestThirds,5) },
-          { id:'R32-7',  t1:tn(firsts,6),  t2:tn(bestThirds,6) },
-          { id:'R32-8',  t1:tn(firsts,7),  t2:tn(bestThirds,7) },
-          { id:'R32-9',  t1:tn(firsts,8),  t2:tn(seconds,0) },
-          { id:'R32-10', t1:tn(firsts,9),  t2:tn(seconds,1) },
-          { id:'R32-11', t1:tn(firsts,10), t2:tn(seconds,2) },
-          { id:'R32-12', t1:tn(firsts,11), t2:tn(seconds,3) },
-          { id:'R32-13', t1:tn(seconds,4), t2:tn(seconds,8) },
-          { id:'R32-14', t1:tn(seconds,5), t2:tn(seconds,9) },
-          { id:'R32-15', t1:tn(seconds,6), t2:tn(seconds,10) },
-          { id:'R32-16', t1:tn(seconds,7), t2:tn(seconds,11) },
-        ];
-        const R16 = Array.from({ length: 8 }, (_, i) => ({
-          id: `R16-${i+1}`,
-          t1: gw(R32[i*2].id,   R32[i*2].t1,   R32[i*2].t2),
-          t2: gw(R32[i*2+1].id, R32[i*2+1].t1, R32[i*2+1].t2),
-        }));
-        const QF = Array.from({ length: 4 }, (_, i) => ({
-          id: `QF-${i+1}`,
-          t1: gw(R16[i*2].id,   R16[i*2].t1,   R16[i*2].t2),
-          t2: gw(R16[i*2+1].id, R16[i*2+1].t1, R16[i*2+1].t2),
-        }));
-        const SF = Array.from({ length: 2 }, (_, i) => ({
-          id: `SF-${i+1}`,
-          t1: gw(QF[i*2].id,   QF[i*2].t1,   QF[i*2].t2),
-          t2: gw(QF[i*2+1].id, QF[i*2+1].t1, QF[i*2+1].t2),
-        }));
-        const Final = [{ id:'FINAL', t1: gw(SF[0].id, SF[0].t1, SF[0].t2), t2: gw(SF[1].id, SF[1].t1, SF[1].t2) }];
-        const Champion = gw(Final[0].id, Final[0].t1, Final[0].t2);
-        return { R32, R16, QF, SF, Final, Champion };
-      }, [qualifiedTeams, currentKnockoutScores]);
+// ─── HTML BUILDERS ────────────────────────────────────────────────────────────
+function h(tag,attrs,...children) {
+  const el=document.createElement(tag);
+  if(attrs) Object.entries(attrs).forEach(([k,v])=>{
+    if(k==='style'&&typeof v==='object') Object.assign(el.style,v);
+    else if(k.startsWith('on')) el.addEventListener(k.slice(2).toLowerCase(),v);
+    else if(k==='className') el.className=v;
+    else el.setAttribute(k,v);
+  });
+  children.flat(Infinity).forEach(c=>{
+    if(c==null||c===false) return;
+    el.appendChild(typeof c==='string'||typeof c==='number' ? document.createTextNode(c) : c);
+  });
+  return el;
+}
 
-      const activeGroupStandings = globalStandings[activeGroup];
+// ─── VIEWS ────────────────────────────────────────────────────────────────────
+function viewPerfiles() {
+  const wrap=h('div',{className:'profiles-wrap card-enter'});
+  wrap.appendChild(h('h2',{className:'profiles-title'},'Elige tu Jugador'));
+  wrap.appendChild(h('p',{className:'profiles-sub'},'Crea perfiles para que tus amigos también hagan sus predicciones.'));
 
-      // ── KnockoutMatchCard ────────────────────────────────────────────────────
-      const KnockoutMatchCard = ({ match, isFinal }) => {
-        const s = currentKnockoutScores[match.id] || {};
-        const isTied = s.g1 !== undefined && s.g2 !== undefined &&
-                       s.g1 !== '' && s.g2 !== '' && s.g1 === s.g2;
-        const isReady = match.t1 !== '???' && match.t2 !== '???';
+  const grid=h('div',{className:'profiles-grid'});
 
-        return (
-          <div
-            className={`p-4 rounded-xl shadow-sm bg-white${!isReady ? ' opacity-60' : ''}`}
-            style={{
-              border: isFinal ? `2px solid ${activeUser.color}` : '1px solid #e5e5e5',
-              boxShadow: isFinal ? `0 4px 24px ${activeUser.color}33` : '0 1px 3px rgba(0,0,0,0.07)',
-            }}
-          >
-            <div className="flex flex-col gap-3">
-              {/* Equipo 1 */}
-              <div className="flex justify-between items-center gap-2">
-                <span className="font-bold text-neutral-800 text-base truncate flex-1">{match.t1}</span>
-                <div className="flex gap-1 items-center">
-                  {isTied && (
-                    <input
-                      type="text" inputMode="numeric" value={s.p1 || ''}
-                      onChange={e => handleKnockoutScore(match.id, 'p1', e.target.value)}
-                      placeholder="P" disabled={!isReady}
-                      className="w-8 h-8 text-center font-bold text-white rounded text-sm"
-                      style={{ backgroundColor: activeUser.color }}
-                    />
-                  )}
-                  <input
-                    type="text" inputMode="numeric" value={s.g1 || ''}
-                    onChange={e => handleKnockoutScore(match.id, 'g1', e.target.value)}
-                    disabled={!isReady}
-                    className="w-10 h-10 text-center text-xl font-black text-neutral-900 bg-neutral-100 rounded-md"
-                    onFocus={e => e.target.style.boxShadow = `0 0 0 2px ${activeUser.color}`}
-                    onBlur={e  => e.target.style.boxShadow = 'none'}
-                  />
-                </div>
-              </div>
-              <div className="h-px bg-neutral-100" />
-              {/* Equipo 2 */}
-              <div className="flex justify-between items-center gap-2">
-                <span className="font-bold text-neutral-800 text-base truncate flex-1">{match.t2}</span>
-                <div className="flex gap-1 items-center">
-                  {isTied && (
-                    <input
-                      type="text" inputMode="numeric" value={s.p2 || ''}
-                      onChange={e => handleKnockoutScore(match.id, 'p2', e.target.value)}
-                      placeholder="P" disabled={!isReady}
-                      className="w-8 h-8 text-center font-bold text-white rounded text-sm"
-                      style={{ backgroundColor: activeUser.color }}
-                    />
-                  )}
-                  <input
-                    type="text" inputMode="numeric" value={s.g2 || ''}
-                    onChange={e => handleKnockoutScore(match.id, 'g2', e.target.value)}
-                    disabled={!isReady}
-                    className="w-10 h-10 text-center text-xl font-black text-neutral-900 bg-neutral-100 rounded-md"
-                    onFocus={e => e.target.style.boxShadow = `0 0 0 2px ${activeUser.color}`}
-                    onBlur={e  => e.target.style.boxShadow = 'none'}
-                  />
-                </div>
-              </div>
-            </div>
-          </div>
-        );
-      };
-
-      // ── RENDER ───────────────────────────────────────────────────────────────
-      return (
-        <div className="min-h-screen bg-white text-neutral-900">
-
-          {/* HEADER */}
-          <header
-            className="sticky top-0 z-50 border-b border-neutral-100 px-4 py-3 bg-white"
-            style={{ backdropFilter:'blur(12px)', WebkitBackdropFilter:'blur(12px)' }}
-          >
-            <div className="max-w-7xl mx-auto flex flex-col sm:flex-row justify-between items-center gap-4">
-              <div className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-full" style={{ background:`linear-gradient(135deg, ${COLORS.violet}, ${COLORS.blue})` }} />
-                <h1
-                  className="text-xl font-black tracking-tighter"
-                  style={{ color: COLORS.dark, fontFamily:"'Barlow Condensed', sans-serif" }}
-                >
-                  PREDICCIONES 2026
-                </h1>
-              </div>
-
-              {activeTab !== 'perfiles' && (
-                <div className="flex gap-1 bg-neutral-100 p-1 rounded-full overflow-x-auto max-w-full">
-                  {[
-                    { id:'perfiles',      label:'Jugadores',    icon: IconUsers  },
-                    { id:'grupos',        label:'Grupos',       icon: null       },
-                    { id:'eliminatorias', label:'Fase Final',   icon: null       },
-                    { id:'resumen',       label:'Mi Tarjeta',   icon: IconTrophy },
-                  ].map(tab => (
-                    <button
-                      key={tab.id}
-                      onClick={() => setActiveTab(tab.id)}
-                      className="px-3 py-2 rounded-full text-sm font-bold whitespace-nowrap flex items-center gap-1 transition-all"
-                      style={activeTab === tab.id
-                        ? { backgroundColor:'white', color: activeUser.color, boxShadow:'0 1px 4px rgba(0,0,0,0.12)' }
-                        : { color:'#737373' }}
-                    >
-                      {tab.icon && React.createElement(tab.icon, { size:14 })}
-                      {tab.label}
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
-          </header>
-
-          <main className="max-w-7xl mx-auto p-4 sm:p-6 lg:p-8">
-
-            {/* ══ PERFILES ════════════════════════════════════════════════════ */}
-            {activeTab === 'perfiles' && (
-              <div className="max-w-2xl mx-auto text-center space-y-8 card-enter">
-                <div className="space-y-2 pt-4">
-                  <h2
-                    className="text-5xl font-black tracking-tight"
-                    style={{ fontFamily:"'Barlow Condensed', sans-serif" }}
-                  >
-                    Elige tu Jugador
-                  </h2>
-                  <p className="text-neutral-500">
-                    Crea perfiles para que tus amigos también hagan sus predicciones.
-                  </p>
-                </div>
-
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-                  {users.map(user => (
-                    <div
-                      key={user.id}
-                      onClick={() => { setActiveUserId(user.id); setActiveTab('grupos'); }}
-                      className="relative p-6 rounded-2xl border-2 cursor-pointer transition-all hover:scale-105 select-none"
-                      style={{ borderColor: activeUserId === user.id ? user.color : '#e5e5e5' }}
-                    >
-                      {users.length > 1 && (
-                        <button
-                          onClick={e => deleteUser(user.id, e)}
-                          className="absolute top-2 right-2 w-6 h-6 flex items-center justify-center rounded-full bg-neutral-100 text-neutral-400 hover:bg-red-100 hover:text-red-500 text-xs transition-colors"
-                        >✕</button>
-                      )}
-                      <div
-                        className="w-16 h-16 mx-auto rounded-full mb-3"
-                        style={{ backgroundColor: user.color }}
-                      />
-                      <h3 className="font-bold truncate">{user.name}</h3>
-                    </div>
-                  ))}
-
-                  {users.length < 6 && (
-                    <div className="p-6 rounded-2xl border-2 border-dashed border-neutral-300 flex flex-col items-center justify-center gap-3">
-                      <div className="w-12 h-12 rounded-full bg-neutral-100 flex items-center justify-center text-neutral-400 text-2xl select-none">+</div>
-                      <input
-                        type="text"
-                        value={newUserName}
-                        onChange={e => setNewUserName(e.target.value)}
-                        onKeyDown={e => e.key === 'Enter' && addUser()}
-                        placeholder="Nuevo Nombre..."
-                        className="w-full text-center text-sm font-bold bg-transparent border-b border-neutral-300 pb-1"
-                        style={{ outline:'none' }}
-                        onFocus={e => e.target.style.borderColor='#171717'}
-                        onBlur={e  => e.target.style.borderColor='#d4d4d4'}
-                      />
-                      <button
-                        onClick={addUser}
-                        className="text-xs font-bold px-4 py-1.5 bg-neutral-900 text-white rounded-full hover:bg-neutral-700 transition-colors"
-                      >Crear</button>
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
-
-            {/* ══ GRUPOS ══════════════════════════════════════════════════════ */}
-            {activeTab === 'grupos' && (
-              <div className="space-y-6 card-enter">
-                {/* Selector de grupo */}
-                <div className="flex flex-wrap justify-center gap-2 mb-8">
-                  {Object.keys(INITIAL_GROUPS).map(group => (
-                    <button
-                      key={group}
-                      onClick={() => setActiveGroup(group)}
-                      className="w-12 h-12 flex items-center justify-center rounded-xl text-lg font-black transition-all"
-                      style={activeGroup === group
-                        ? { backgroundColor: activeUser.color, color:'white', transform:'scale(1.1)' }
-                        : { backgroundColor:'#f5f5f5', color:'#a3a3a3' }}
-                    >{group}</button>
-                  ))}
-                </div>
-
-                <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-
-                  {/* Tabla de posiciones */}
-                  <section className="lg:col-span-7">
-                    <div className="flex justify-between items-end mb-4 px-1">
-                      <h2
-                        className="text-2xl font-black"
-                        style={{ fontFamily:"'Barlow Condensed', sans-serif" }}
-                      >Grupo {activeGroup}</h2>
-                      <div className="flex gap-4 text-xs font-bold uppercase tracking-wider">
-                        <span className="flex items-center gap-1">
-                          <div className="w-2 h-2 rounded-full" style={{ backgroundColor: COLORS.green }} />
-                          Avanza
-                        </span>
-                        <span className="flex items-center gap-1">
-                          <div className="w-2 h-2 rounded-full bg-yellow-400" />
-                          Posible
-                        </span>
-                      </div>
-                    </div>
-
-                    <div className="bg-white rounded-3xl border border-neutral-200 overflow-hidden shadow-sm">
-                      <table className="w-full text-sm text-left">
-                        <thead className="bg-neutral-50 text-neutral-400 text-xs uppercase font-bold border-b border-neutral-200">
-                          <tr>
-                            <th className="px-6 py-4">Selección</th>
-                            <th className="px-2 py-4 text-center">PJ</th>
-                            <th className="px-2 py-4 text-center">G</th>
-                            <th className="px-2 py-4 text-center">E</th>
-                            <th className="px-2 py-4 text-center">P</th>
-                            <th className="px-2 py-4 text-center">DG</th>
-                            <th className="px-6 py-4 text-center font-black text-neutral-900">PTS</th>
-                          </tr>
-                        </thead>
-                        <tbody className="divide-y divide-neutral-100">
-                          {activeGroupStandings.map((team, index) => {
-                            let indicatorColor = 'transparent';
-                            if (index < 2) indicatorColor = COLORS.green;
-                            else if (index === 2 && qualifiedTeams.bestThirds.some(t => t.name === team.name))
-                              indicatorColor = '#FFB800';
-
-                            return (
-                              <tr key={team.name} className="hover:bg-neutral-50 transition-colors">
-                                <td className="px-6 py-4 font-bold flex items-center gap-3 text-base">
-                                  <div className="w-1.5 h-6 rounded-full shrink-0" style={{ backgroundColor: indicatorColor }} />
-                                  {team.name}
-                                </td>
-                                <td className="px-2 py-4 text-center text-neutral-500 font-medium">{team.pj}</td>
-                                <td className="px-2 py-4 text-center text-neutral-500 font-medium">{team.pg}</td>
-                                <td className="px-2 py-4 text-center text-neutral-500 font-medium">{team.pe}</td>
-                                <td className="px-2 py-4 text-center text-neutral-500 font-medium">{team.pp}</td>
-                                <td className="px-2 py-4 text-center font-bold text-neutral-700">
-                                  {team.dg > 0 ? `+${team.dg}` : team.dg}
-                                </td>
-                                <td className="px-6 py-4 text-center font-black text-xl">{team.pts}</td>
-                              </tr>
-                            );
-                          })}
-                        </tbody>
-                      </table>
-                    </div>
-                  </section>
-
-                  {/* Partidos */}
-                  <section className="lg:col-span-5">
-                    <h2 className="text-xl font-bold mb-4 px-1">Partidos</h2>
-                    <div className="space-y-3">
-                      {ALL_MATCHES.filter(m => m.group === activeGroup).map(match => (
-                        <div
-                          key={match.id}
-                          className="flex items-center justify-between p-4 bg-white rounded-2xl shadow-sm border border-neutral-200 hover:border-neutral-300 transition-colors"
-                        >
-                          <div className="flex-1 text-right pr-4 font-bold text-neutral-800 text-base truncate">
-                            {match.team1}
-                          </div>
-                          <div className="flex items-center gap-2 shrink-0 bg-neutral-50 p-1.5 rounded-xl border border-neutral-200">
-                            <input
-                              type="text" inputMode="numeric"
-                              value={currentScores[match.id]?.team1 ?? ''}
-                              onChange={e => handleScoreChange(match.id, 'team1', e.target.value)}
-                              className="w-12 h-12 text-center text-xl font-black bg-white rounded-lg shadow-sm transition-all"
-                              style={{ border:'2px solid transparent' }}
-                              onFocus={e => e.target.style.borderColor = activeUser.color}
-                              onBlur={e  => e.target.style.borderColor = 'transparent'}
-                            />
-                            <span className="text-neutral-300 font-bold text-xs select-none">vs</span>
-                            <input
-                              type="text" inputMode="numeric"
-                              value={currentScores[match.id]?.team2 ?? ''}
-                              onChange={e => handleScoreChange(match.id, 'team2', e.target.value)}
-                              className="w-12 h-12 text-center text-xl font-black bg-white rounded-lg shadow-sm transition-all"
-                              style={{ border:'2px solid transparent' }}
-                              onFocus={e => e.target.style.borderColor = activeUser.color}
-                              onBlur={e  => e.target.style.borderColor = 'transparent'}
-                            />
-                          </div>
-                          <div className="flex-1 text-left pl-4 font-bold text-neutral-800 text-base truncate">
-                            {match.team2}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </section>
-                </div>
-              </div>
-            )}
-
-            {/* ══ ELIMINATORIAS ═══════════════════════════════════════════════ */}
-            {activeTab === 'eliminatorias' && (
-              <div className="space-y-6 card-enter">
-                <div className="flex flex-wrap justify-center gap-2 mb-8 bg-neutral-100 p-2 rounded-2xl max-w-fit mx-auto">
-                  {[
-                    { id:'R32',   label:'16avos'  },
-                    { id:'R16',   label:'Octavos' },
-                    { id:'QF',    label:'Cuartos' },
-                    { id:'SF',    label:'Semis'   },
-                    { id:'FINAL', label:'Final'   },
-                  ].map(round => (
-                    <button
-                      key={round.id}
-                      onClick={() => setActiveKnockoutRound(round.id)}
-                      className="px-5 py-2.5 rounded-xl font-bold text-sm transition-all"
-                      style={activeKnockoutRound === round.id
-                        ? { backgroundColor:'white', color:'#171717', boxShadow:'0 1px 3px rgba(0,0,0,0.1)' }
-                        : { color:'#737373' }}
-                    >{round.label}</button>
-                  ))}
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                  {activeKnockoutRound === 'R32'   && knockoutBracket.R32.map(m => <KnockoutMatchCard key={m.id} match={m} />)}
-                  {activeKnockoutRound === 'R16'   && knockoutBracket.R16.map(m => <KnockoutMatchCard key={m.id} match={m} />)}
-                  {activeKnockoutRound === 'QF'    && knockoutBracket.QF.map(m  => <KnockoutMatchCard key={m.id} match={m} />)}
-                  {activeKnockoutRound === 'SF'    && knockoutBracket.SF.map(m  => (
-                    <div key={m.id} className="lg:col-span-2">
-                      <KnockoutMatchCard match={m} />
-                    </div>
-                  ))}
-                  {activeKnockoutRound === 'FINAL' && knockoutBracket.Final.map(m => (
-                    <div key={m.id} className="md:col-span-2 lg:col-span-4 max-w-2xl mx-auto w-full space-y-4 text-center">
-                      <div
-                        className="inline-block px-4 py-1 rounded-full text-sm font-black uppercase tracking-widest text-white"
-                        style={{ backgroundColor: COLORS.red }}
-                      >La Gran Final</div>
-                      <KnockoutMatchCard match={m} isFinal={true} />
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* ══ RESUMEN ═════════════════════════════════════════════════════ */}
-            {activeTab === 'resumen' && (
-              <div className="max-w-md mx-auto zoom-enter">
-                <div
-                  className="relative bg-white rounded-[2.5rem] shadow-2xl overflow-hidden border border-neutral-100 flex flex-col"
-                  style={{ aspectRatio:'4/5' }}
-                >
-                  {/* Fondos decorativos — CORREGIDOS */}
-                  <div
-                    className="absolute top-0 right-0 w-64 h-64 rounded-bl-full pointer-events-none"
-                    style={{ background:`linear-gradient(to bottom left, ${activeUser.color}44, transparent)` }}
-                  />
-                  <div
-                    className="absolute -bottom-20 -left-20 w-80 h-80 rounded-full pointer-events-none"
-                    style={{ backgroundColor: activeUser.color, opacity: 0.1 }}
-                  />
-
-                  <div className="p-8 flex-1 flex flex-col relative z-10">
-                    {/* Header tarjeta */}
-                    <div className="flex justify-between items-start mb-8">
-                      <div>
-                        <p className="text-xs font-bold uppercase tracking-widest text-neutral-400 mb-1">
-                          Predicción Oficial 2026
-                        </p>
-                        <h2
-                          className="text-3xl font-black leading-none"
-                          style={{ color: activeUser.color, fontFamily:"'Barlow Condensed', sans-serif" }}
-                        >{activeUser.name}</h2>
-                      </div>
-                      <div
-                        className="w-10 h-10 rounded-full flex items-center justify-center text-white font-black text-xl shrink-0"
-                        style={{ backgroundColor: activeUser.color }}
-                      >
-                        {activeUser.name.charAt(0).toUpperCase()}
-                      </div>
-                    </div>
-
-                    {/* Campeón */}
-                    <div className="text-center flex-1 flex flex-col items-center justify-center">
-                      <p className="text-sm font-bold uppercase tracking-widest text-neutral-400 mb-3">
-                        Mi Campeón
-                      </p>
-                      <h1
-                        className="text-6xl font-black uppercase tracking-tighter"
-                        style={{ color: COLORS.dark, fontFamily:"'Barlow Condensed', sans-serif" }}
-                      >{knockoutBracket.Champion}</h1>
-                      {knockoutBracket.Champion !== '???' && (
-                        <div className="mt-5 inline-flex items-center gap-2 px-4 py-2 bg-neutral-900 text-white rounded-full font-bold text-sm">
-                          {React.createElement(IconTrophy, { size:15 })}
-                          ¡Levanta la copa!
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Semifinalistas */}
-                    <div className="mt-auto bg-neutral-50 rounded-2xl p-4 border border-neutral-100">
-                      <h3 className="text-xs font-bold uppercase tracking-widest text-neutral-400 mb-3 text-center">
-                        Semifinalistas
-                      </h3>
-                      <div className="grid grid-cols-2 gap-3">
-                        <div className="space-y-2">
-                          <div className="bg-white px-3 py-2 rounded-xl text-sm font-bold shadow-sm border border-neutral-100 truncate text-center">
-                            {knockoutBracket.SF[0]?.t1 || '???'}
-                          </div>
-                          <div className="bg-white px-3 py-2 rounded-xl text-sm font-bold shadow-sm border border-neutral-100 truncate text-center">
-                            {knockoutBracket.SF[0]?.t2 || '???'}
-                          </div>
-                        </div>
-                        <div className="space-y-2">
-                          <div className="bg-white px-3 py-2 rounded-xl text-sm font-bold shadow-sm border border-neutral-100 truncate text-center">
-                            {knockoutBracket.SF[1]?.t1 || '???'}
-                          </div>
-                          <div className="bg-white px-3 py-2 rounded-xl text-sm font-bold shadow-sm border border-neutral-100 truncate text-center">
-                            {knockoutBracket.SF[1]?.t2 || '???'}
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <p className="mt-6 text-center text-sm text-neutral-500">
-                  Toma una captura de pantalla y compártela con tus amigos.
-                </p>
-              </div>
-            )}
-
-          </main>
-        </div>
-      );
+  state.users.forEach(u=>{
+    const card=h('div',{
+      className:'profile-card',
+      style:{borderColor:state.uid===u.id?u.color:'#e5e5e5'},
+      onclick:()=>{setState({uid:u.id,tab:'grupos'});}
+    });
+    if(state.users.length>1){
+      const del=h('button',{className:'profile-delete',onclick:(e)=>deleteUser(u.id,e)},'✕');
+      card.appendChild(del);
     }
+    card.appendChild(h('div',{className:'profile-avatar',style:{backgroundColor:u.color}}));
+    card.appendChild(h('div',{className:'profile-name'},u.name));
+    grid.appendChild(card);
+  });
 
-    ReactDOM.createRoot(document.getElementById('root')).render(<App />);
-  </script>
+  if(state.users.length<6){
+    const addBox=h('div',{className:'profile-add'});
+    addBox.appendChild(h('div',{className:'profile-add-icon'},'+'));
+    const inp=h('input',{type:'text',placeholder:'Nuevo Nombre...',value:state.newName});
+    inp.addEventListener('input',e=>setState({newName:e.target.value}));
+    inp.addEventListener('keydown',e=>e.key==='Enter'&&addUser());
+    addBox.appendChild(inp);
+    addBox.appendChild(h('button',{className:'btn-create',onclick:addUser},'Crear'));
+    grid.appendChild(addBox);
+  }
+
+  wrap.appendChild(grid);
+  return wrap;
+}
+
+function viewGrupos() {
+  const u=activeUser();
+  const sc=u.sc;
+  const st=allStandings(sc);
+  const {best8}=qualified(sc);
+  const g=state.group;
+  const table=st[g];
+
+  const wrap=h('div',{className:'card-enter'});
+
+  // Selector de grupos
+  const tabs=h('div',{className:'group-tabs'});
+  GROUP_KEYS.forEach(key=>{
+    const btn=h('button',{
+      className:'group-tab'+(key===g?' active':''),
+      style:key===g?{backgroundColor:u.color}:{},
+      onclick:()=>setState({group:key})
+    },key);
+    tabs.appendChild(btn);
+  });
+  wrap.appendChild(tabs);
+
+  const layout=h('div',{className:'groups-layout'});
+
+  // ── Tabla ──
+  const leftCol=h('div');
+  const standHeader=h('div',{className:'standings-header'});
+  standHeader.appendChild(h('h2',{className:'section-title'},`Grupo ${g}`));
+  const leg=h('div',{className:'legend'});
+  leg.appendChild(h('span',{},...[h('span',{className:'legend-dot',style:{backgroundColor:C.green}}),' Avanza']));
+  leg.appendChild(h('span',{},...[h('span',{className:'legend-dot',style:{backgroundColor:'#FFB800'}}),' Posible']));
+  standHeader.appendChild(leg);
+  leftCol.appendChild(standHeader);
+
+  const card=h('div',{className:'standings-card'});
+  const tbl=h('table');
+  const thead=h('thead');
+  const hr=h('tr');
+  ['Selección','PJ','G','E','P','DG','PTS'].forEach((txt,i)=>{
+    const th=h('th',{});
+    th.textContent=txt;
+    if(i>0) th.style.textAlign='center';
+    hr.appendChild(th);
+  });
+  thead.appendChild(hr);
+  tbl.appendChild(thead);
+
+  const tbody=h('tbody');
+  table.forEach((team,idx)=>{
+    let indColor='transparent';
+    if(idx<2) indColor=C.green;
+    else if(idx===2&&best8.some(t=>t.name===team.name)) indColor='#FFB800';
+
+    const tr=h('tr');
+    const nameTd=h('td');
+    nameTd.appendChild(h('div',{className:'indicator',style:{backgroundColor:indColor}}));
+    nameTd.appendChild(document.createTextNode(team.name));
+    tr.appendChild(nameTd);
+    [team.pj,team.pg,team.pe,team.pp,team.dg>0?`+${team.dg}`:team.dg,team.pts].forEach(v=>{
+      tr.appendChild(h('td',{},String(v)));
+    });
+    tbody.appendChild(tr);
+  });
+  tbl.appendChild(tbody);
+  card.appendChild(tbl);
+  leftCol.appendChild(card);
+  layout.appendChild(leftCol);
+
+  // ── Partidos ──
+  const rightCol=h('div');
+  rightCol.appendChild(h('h3',{className:'section-title-sm'},'Partidos'));
+  ALL_MATCHES.filter(m=>m.g===g).forEach(m=>{
+    const mc=h('div',{className:'match-card'});
+    mc.appendChild(h('div',{className:'match-team right'},m.t1));
+    const sw=h('div',{className:'score-wrap'});
+
+    const i1=h('input',{type:'text',inputmode:'numeric',className:'score-input',value:sc[m.id]?.t1??''});
+    i1.addEventListener('input',e=>setScore(m.id,'t1',e.target.value));
+    i1.addEventListener('focus',e=>e.target.style.borderColor=u.color);
+    i1.addEventListener('blur',e=>e.target.style.borderColor='transparent');
+
+    const i2=h('input',{type:'text',inputmode:'numeric',className:'score-input',value:sc[m.id]?.t2??''});
+    i2.addEventListener('input',e=>setScore(m.id,'t2',e.target.value));
+    i2.addEventListener('focus',e=>e.target.style.borderColor=u.color);
+    i2.addEventListener('blur',e=>e.target.style.borderColor='transparent');
+
+    sw.appendChild(i1);
+    sw.appendChild(h('span',{className:'vs-sep'},'vs'));
+    sw.appendChild(i2);
+    mc.appendChild(sw);
+    mc.appendChild(h('div',{className:'match-team left'},m.t2));
+    rightCol.appendChild(mc);
+  });
+  layout.appendChild(rightCol);
+
+  wrap.appendChild(layout);
+  return wrap;
+}
+
+function koMatchCard(match,ks,userColor,isFinal,isHalf) {
+  const s=ks[match.id]||{};
+  const tied=s.g1!==undefined&&s.g1!==''&&s.g2!==undefined&&s.g2!==''&&s.g1===s.g2;
+  const ready=match.t1!=='???'&&match.t2!=='???';
+
+  let cls='ko-match';
+  if(!ready) cls+=' disabled';
+
+  const outer=isFinal?h('div',{className:isHalf?'ko-full':'ko-full'}):h('div');
+  const card=h('div',{
+    className:cls+(isFinal?' final-match':''),
+    style:isFinal?{borderColor:userColor,boxShadow:`0 4px 20px ${userColor}33`}:{}
+  });
+
+  // Row t1
+  const row1=h('div',{className:'ko-row'});
+  row1.appendChild(h('div',{className:'ko-team'},match.t1));
+  const inp1=h('div',{className:'ko-inputs'});
+  if(tied){
+    const p=h('input',{type:'text',inputmode:'numeric',className:'ko-pen',style:{backgroundColor:userColor},placeholder:'P',value:s.p1||''});
+    p.addEventListener('input',e=>setKS(match.id,'p1',e.target.value));
+    inp1.appendChild(p);
+  }
+  const g1=h('input',{type:'text',inputmode:'numeric',className:'ko-score',value:s.g1||''});
+  if(!ready) g1.setAttribute('disabled','');
+  g1.addEventListener('input',e=>setKS(match.id,'g1',e.target.value));
+  g1.addEventListener('focus',e=>e.target.style.boxShadow=`0 0 0 2px ${userColor}`);
+  g1.addEventListener('blur',e=>e.target.style.boxShadow='none');
+  inp1.appendChild(g1);
+  row1.appendChild(inp1);
+  card.appendChild(row1);
+  card.appendChild(h('div',{className:'ko-divider'}));
+
+  // Row t2
+  const row2=h('div',{className:'ko-row'});
+  row2.appendChild(h('div',{className:'ko-team'},match.t2));
+  const inp2=h('div',{className:'ko-inputs'});
+  if(tied){
+    const p=h('input',{type:'text',inputmode:'numeric',className:'ko-pen',style:{backgroundColor:userColor},placeholder:'P',value:s.p2||''});
+    p.addEventListener('input',e=>setKS(match.id,'p2',e.target.value));
+    inp2.appendChild(p);
+  }
+  const g2=h('input',{type:'text',inputmode:'numeric',className:'ko-score',value:s.g2||''});
+  if(!ready) g2.setAttribute('disabled','');
+  g2.addEventListener('input',e=>setKS(match.id,'g2',e.target.value));
+  g2.addEventListener('focus',e=>e.target.style.boxShadow=`0 0 0 2px ${userColor}`);
+  g2.addEventListener('blur',e=>e.target.style.boxShadow='none');
+  inp2.appendChild(g2);
+  row2.appendChild(inp2);
+  card.appendChild(row2);
+
+  if(isFinal){
+    outer.style.textAlign='center';
+    outer.appendChild(h('div',{className:'final-label'},'La Gran Final'));
+  }
+  outer.appendChild(card);
+  return outer;
+}
+
+function viewEliminatorias() {
+  const u=activeUser();
+  const br=bracket(u.sc,u.ks);
+  const round=state.round;
+
+  const wrap=h('div',{className:'card-enter'});
+
+  const rtabs=h('div',{className:'round-tabs'});
+  [{id:'R32',l:'16avos'},{id:'R16',l:'Octavos'},{id:'QF',l:'Cuartos'},{id:'SF',l:'Semis'},{id:'FINAL',l:'Final'}].forEach(r=>{
+    rtabs.appendChild(h('button',{
+      className:'round-tab'+(round===r.id?' active':''),
+      onclick:()=>setState({round:r.id})
+    },r.l));
+  });
+  wrap.appendChild(rtabs);
+
+  const grid=h('div',{className:'knockout-grid'});
+
+  const matches=br[round==='FINAL'?'Final':round];
+  matches.forEach((m,i)=>{
+    const isFinal=round==='FINAL';
+    const isHalf=round==='SF';
+    const card=koMatchCard(m,u.ks,u.color,isFinal);
+    if(isHalf) card.className='ko-half';
+    grid.appendChild(card);
+  });
+
+  wrap.appendChild(grid);
+  return wrap;
+}
+
+function viewResumen() {
+  const u=activeUser();
+  const br=bracket(u.sc,u.ks);
+
+  const wrap=h('div',{className:'card-wrap zoom-enter'});
+  const card=h('div',{className:'summary-card'});
+
+  const bg1=h('div',{className:'card-bg1',style:{background:`linear-gradient(to bottom left, ${u.color}44, transparent)`}});
+  const bg2=h('div',{className:'card-bg2',style:{backgroundColor:u.color}});
+  card.appendChild(bg1);
+  card.appendChild(bg2);
+
+  const inner=h('div',{className:'card-inner'});
+
+  // Header
+  const hdr=h('div',{className:'card-header'});
+  const hdrLeft=h('div');
+  hdrLeft.appendChild(h('div',{className:'card-label'},'Predicción Oficial 2026'));
+  hdrLeft.appendChild(h('div',{className:'card-username',style:{color:u.color}},u.name));
+  hdr.appendChild(hdrLeft);
+  hdr.appendChild(h('div',{className:'card-avatar',style:{backgroundColor:u.color}},u.name.charAt(0).toUpperCase()));
+  inner.appendChild(hdr);
+
+  // Campeón
+  const champ=h('div',{className:'card-champion'});
+  champ.appendChild(h('div',{className:'champ-label'},'Mi Campeón'));
+  champ.appendChild(h('div',{className:'champ-name'},br.champ));
+  if(br.champ!=='???'){
+    champ.appendChild(h('div',{className:'champ-badge'},'🏆 ¡Levanta la copa!'));
+  }
+  inner.appendChild(champ);
+
+  // Semifinalistas
+  const semis=h('div',{className:'semis-box'});
+  semis.appendChild(h('div',{className:'semis-label'},'Semifinalistas'));
+  const sg=h('div',{className:'semis-grid'});
+  const col1=h('div',{style:{display:'flex',flexDirection:'column',gap:'8px'}});
+  col1.appendChild(h('div',{className:'semi-team'},br.SF[0]?.t1||'???'));
+  col1.appendChild(h('div',{className:'semi-team'},br.SF[0]?.t2||'???'));
+  const col2=h('div',{style:{display:'flex',flexDirection:'column',gap:'8px'}});
+  col2.appendChild(h('div',{className:'semi-team'},br.SF[1]?.t1||'???'));
+  col2.appendChild(h('div',{className:'semi-team'},br.SF[1]?.t2||'???'));
+  sg.appendChild(col1);
+  sg.appendChild(col2);
+  semis.appendChild(sg);
+  inner.appendChild(semis);
+
+  card.appendChild(inner);
+  wrap.appendChild(card);
+  wrap.appendChild(h('p',{className:'card-note'},'Toma una captura de pantalla y compártela con tus amigos.'));
+  return wrap;
+}
+
+// ─── RENDER ───────────────────────────────────────────────────────────────────
+function render() {
+  const u=activeUser();
+  const app=document.getElementById('app');
+  app.innerHTML='';
+
+  // Page
+  const page=h('div',{className:'page'});
+
+  // Header
+  const hdr=h('header',{className:'header'});
+  const hi=h('div',{className:'header-inner'});
+
+  const logo=h('div',{className:'logo'});
+  logo.appendChild(h('div',{className:'logo-dot'}));
+  logo.appendChild(h('h1',{style:{color:'#1a1a1a'}},'PREDICCIONES 2026'));
+  hi.appendChild(logo);
+
+  if(state.tab!=='perfiles'){
+    const nav=h('div',{className:'nav-tabs'});
+    [{id:'perfiles',l:'👥 Jugadores'},{id:'grupos',l:'Grupos'},{id:'eliminatorias',l:'Fase Final'},{id:'resumen',l:'🏆 Tarjeta'}].forEach(t=>{
+      const btn=h('button',{
+        className:'nav-tab'+(state.tab===t.id?' active':''),
+        style:state.tab===t.id?{color:u.color}:{},
+        onclick:()=>setState({tab:t.id})
+      },t.l);
+      nav.appendChild(btn);
+    });
+    hi.appendChild(nav);
+  }
+
+  hdr.appendChild(hi);
+  page.appendChild(hdr);
+
+  // Main
+  const main=h('main');
+  const views={perfiles:viewPerfiles,grupos:viewGrupos,eliminatorias:viewEliminatorias,resumen:viewResumen};
+  main.appendChild(views[state.tab]());
+  page.appendChild(main);
+
+  app.appendChild(page);
+}
+
+// ─── BOOT ─────────────────────────────────────────────────────────────────────
+render();
+</script>
 </body>
 </html>
