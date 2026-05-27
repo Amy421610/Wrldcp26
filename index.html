@@ -255,6 +255,7 @@ body.dark .cmp-score.win{color:var(--neon);}
 <div id="toast"></div>
 
 <script>
+
 // ═══════════════════════════════════════════════════════════════
 // DATOS
 // ═══════════════════════════════════════════════════════════════
@@ -389,10 +390,72 @@ function getElimScores(){ return getActive()?.elimScores||{}; }
 // ═══════════════════════════════════════════════════════════════
 // STORAGE
 // ═══════════════════════════════════════════════════════════════
+// ─── FIREBASE CONFIG ────────────────────────────────────────────
+// 🔧 INSTRUCCIONES: Reemplaza estos valores con los de tu proyecto Firebase
+// Ve a: console.firebase.google.com → Tu proyecto → ⚙️ → Configuración del proyecto → Tu aplicación web
+const FIREBASE_CONFIG = {
+  apiKey:            "AIzaSyBLDkqON8s_RcDCUy5tOiqLHZpUB65ZMaw",
+  authDomain:        "quiniela-2026-7eea3.firebaseapp.com",
+  projectId:         "quiniela-2026-7eea3",
+  storageBucket:     "quiniela-2026-7eea3.firebasestorage.app",
+  messagingSenderId: "834556126478",
+  appId:             "1:834556126478:web:293662379e4991ea78a35f"
+};
+const DB_COLLECTION = "quiniela2026"; // puedes cambiar el nombre si quieres
+
+// ─── FIREBASE SDK ────────────────────────────────────────────────
+let _db = null;
+
+async function getDB(){
+  if(_db) return _db;
+  const { initializeApp, getApps } = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js");
+  const { getFirestore, collection, doc, getDocs, setDoc, deleteDoc } =
+    await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js");
+
+  const app = getApps().length ? getApps()[0] : initializeApp(FIREBASE_CONFIG);
+  _db = { fs: getFirestore(app), collection, doc, getDocs, setDoc, deleteDoc };
+  return _db;
+}
+
+// ─── CLOUD SYNC ──────────────────────────────────────────────────
+async function loadFromCloud(){
+  try{
+    const db = await getDB();
+    const snap = await db.getDocs(db.collection(db.fs, DB_COLLECTION));
+    const cloudProfiles = [];
+    snap.forEach(d => cloudProfiles.push(d.data()));
+    if(cloudProfiles.length > 0) profiles = cloudProfiles;
+  }catch(e){
+    console.warn("Firebase no disponible, usando localStorage:", e.message);
+  }
+}
+
+async function saveProfileToCloud(profile){
+  try{
+    const db = await getDB();
+    await db.setDoc(db.doc(db.fs, DB_COLLECTION, profile.id), profile);
+  }catch(e){
+    console.warn("No se pudo guardar en la nube:", e.message);
+  }
+}
+
+async function deleteProfileFromCloud(id){
+  try{
+    const db = await getDB();
+    await db.deleteDoc(db.doc(db.fs, DB_COLLECTION, id));
+  }catch(e){
+    console.warn("No se pudo eliminar en la nube:", e.message);
+  }
+}
+
 function persist(){
+  // Siempre guarda local como respaldo
   localStorage.setItem('q2026_profiles', JSON.stringify(profiles));
   localStorage.setItem('q2026_active', activeId||'');
   localStorage.setItem('q2026_dark', document.body.classList.contains('dark')?'1':'0');
+  // Sincroniza el perfil activo a la nube
+  const p = getActive();
+  if(p) saveProfileToCloud(p);
 }
 
 function load(){
@@ -487,6 +550,7 @@ function enterWithSelected(){
 function deleteProfile(id,e){
   e.stopPropagation();
   if(!confirm('¿Eliminar este perfil?')) return;
+  deleteProfileFromCloud(id);
   profiles=profiles.filter(p=>p.id!==id);
   if(selectedModalId===id) selectedModalId=null;
   if(profiles.length===0){persist();renderProfileList();return;}
@@ -936,15 +1000,56 @@ function renderAll(){
 // ═══════════════════════════════════════════════════════════════
 // INIT
 // ═══════════════════════════════════════════════════════════════
-function init(){
+function showLoading(msg){
+  let el=document.getElementById('loading-screen');
+  if(!el){
+    el=document.createElement('div');
+    el.id='loading-screen';
+    el.style.cssText='position:fixed;inset:0;background:#050505;z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;color:#C6FF00;font-weight:900;font-size:1rem;letter-spacing:.05em;';
+    el.innerHTML='<div style="font-size:2.5rem">⚽</div><div id="loading-msg">Cargando...</div>';
+    document.body.appendChild(el);
+  }
+  document.getElementById('loading-msg').textContent=msg||'Cargando...';
+}
+function hideLoading(){
+  const el=document.getElementById('loading-screen');
+  if(el) el.remove();
+}
+
+async function init(){
+  // 1. Carga local primero (instantáneo)
   load();
 
-  // Build color pickers
+  // 2. Build color pickers
   buildColorPicker('color-picker', newProfileColor, c=>{newProfileColor=c;});
   buildColorPicker('color-picker-edit', editingColor, c=>{editingColor=c;});
 
+  // 3. Carga desde la nube (sincroniza perfiles de todos)
+  showLoading('Sincronizando perfiles...');
+  await loadFromCloud();
+
+  // Fusiona: si la nube tiene perfiles nuevos que no tenemos local, agrégalos
+  // Si tenemos local que no está en la nube (offline), los subimos
+  const localData = localStorage.getItem('q2026_profiles');
+  if(localData){
+    try{
+      const local = JSON.parse(localData);
+      local.forEach(lp=>{
+        if(!profiles.find(p=>p.id===lp.id)) profiles.push(lp);
+      });
+    }catch(e){}
+  }
+
+  // Sube perfiles locales que no estén en la nube
+  profiles.forEach(p => saveProfileToCloud(p));
+
+  // Guarda estado fusionado local
+  localStorage.setItem('q2026_profiles', JSON.stringify(profiles));
+
+  hideLoading();
+
+  // 4. Decide qué mostrar
   if(profiles.length===0||!profiles.find(p=>p.id===activeId)){
-    // Show modal
     if(profiles.length>0){
       selectedModalId=profiles[0].id;
       switchModalTab('select');
@@ -959,7 +1064,22 @@ function init(){
   }
 }
 
+// Refresca perfiles de la nube cada 30 segundos (para ver si alguien nuevo se unió)
+setInterval(async ()=>{
+  const prev=profiles.length;
+  await loadFromCloud();
+  if(profiles.length!==prev){
+    localStorage.setItem('q2026_profiles', JSON.stringify(profiles));
+    // Si estamos en comparar, refresca
+    if(document.getElementById('tab-comparar').classList.contains('active')){
+      populateCompareSelects();
+      renderCompare();
+    }
+  }
+}, 30000);
+
 init();
 </script>
+
 </body>
 </html>
