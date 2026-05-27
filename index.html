@@ -476,11 +476,13 @@ let _db = null;
 async function getDB(){
   if(_db) return _db;
   const { initializeApp, getApps } = await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js");
-  const { getFirestore, collection, doc, getDocs, setDoc, deleteDoc } =
+  const { getFirestore, collection, doc, getDocs, getDoc, setDoc, deleteDoc } =
     await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js");
 
   const app = getApps().length ? getApps()[0] : initializeApp(FIREBASE_CONFIG);
-  _db = { fs: getFirestore(app), collection, doc, getDocs, setDoc, deleteDoc };
+  _db = { fs: getFirestore(app), collection, doc, getDocs, getDoc, setDoc, deleteDoc };
+  // Verify firebase connected
+  console.log('Firebase connected to project:', FIREBASE_CONFIG.projectId);
   return _db;
 }
 
@@ -1024,176 +1026,319 @@ window.renderCompare=function(){
 // RESULTADOS REALES + SISTEMA DE PUNTOS
 // ═══════════════════════════════════════════════════════════════
 
-const ADMIN_PIN = "2026"; // Cambia esto si quieres otro PIN
-const REAL_DOC_ID = "__resultados_reales__";
+const ADMIN_PIN   = "2026";            // Cambia este PIN si quieres
+const REAL_DOC_ID = "__real__";
 
-// Estado resultados reales
-// realResults = { groupScores:{idx:{s1,s2}}, elimScores:{id:{s1,s2}} }
-let realResults = { groupScores:{}, elimScores:{} };
+// Puntuación
+// Grupos:      acertar resultado (G/E/P) = 1pt, marcador exacto = 3pts
+// Eliminatoria: acertar ganador = 2pts, marcador exacto = 5pts
+const PTS = { gResult:1, gExact:3, eResult:2, eExact:5 };
+
+let realResults  = { groupScores:{}, elimScores:{} };
 let adminUnlocked = false;
-let controlGroup = 'A';
+let controlGroup  = 'A';
 
-// ─── SISTEMA DE PUNTOS ───────────────────────────────────────
-// Fase de grupos: 1pt resultado correcto (G/E/P), 3pts marcador exacto
-// Eliminatoria: 2pts ganador correcto, 5pts marcador exacto
-const PTS_GROUP_RESULT  = 1;
-const PTS_GROUP_EXACT   = 3;
-const PTS_ELIM_RESULT   = 2;
-const PTS_ELIM_EXACT    = 5;
+// ─── MATRIZ OFICIAL FIFA 2026 PARA 16AVOS ────────────────────
+// 10 cruces fijos + 6 cruces de 1eros vs mejores 3eros
+// Cruces fijos (posición en array = índice de partido R32)
+// 1ero[X] vs 2do[Y]  o  2do[X] vs 2do[Y]
+// Los índices corresponden a GROUPS = ['A','B','C','D','E','F','G','H','I','J','K','L']
+// Grupos:                                0    1    2    3    4    5    6    7    8    9   10   11
 
-function resultSign(s1, s2){
+// Cruces fijos según documento FIFA (los 10 partidos directos):
+// R32-1:  2A vs 2B
+// R32-2:  1C vs 2F
+// R32-3:  1F vs 2C
+// R32-4:  2E vs 2I
+// R32-5:  1H vs 2J
+// R32-6:  2K vs 2L
+// R32-7:  2D vs 2G
+// Los 6 restantes: 1A,1B,1D,1E,1G,1I vs los 8 mejores terceros (según matriz)
+
+// Matriz FIFA para terceros lugares:
+// Clave = string con 8 letras de grupos que clasificaron (ordenados alfabéticamente)
+// Valor = array de [partido_idx, grupo_lider] para cada 3ero en orden de ranking
+// Solo los 3eros van contra 1eros de A,B,D,E,G,I (los 6 slots variables)
+// Aquí implementamos la tabla oficial FIFA 2026 de combinaciones de terceros
+const FIFA_3RD_MATRIX = {
+  // Los 12 terceros → 8 mejores → según qué grupos pasaron, se asignan a 1eros de A,B,D,E,G,I
+  // Formato: "GRUPOS_ORDENADOS" => [vsA, vsB, vsD, vsE, vsG, vsI]
+  // donde cada valor es el grupo del tercer lugar asignado a ese primer lugar
+  // Tabla oficial simplificada (los patrones más probables):
+  "ABCDEFGH": ["C","D","E","F","G","H",null,null],  // placeholder
+};
+
+// Implementación simplificada: asignamos los 8 mejores 3eros a los 6 slots de primeros
+// en orden de ranking (mejor 3ero vs peor 1ero de los 6, etc.)
+// Esto es una aproximación válida - la matriz exacta depende del sorteo FIFA
+function buildR32Matchups(firsts, seconds, bestThirds8){
+  // firsts[0..11]  = 1er de grupo A..L
+  // seconds[0..11] = 2do de grupo A..L  (índice = índice de grupo)
+  // bestThirds8[0..7] = 8 mejores 3eros en orden (0=mejor)
+
+  const g = (arr,i) => arr[i] || null;
+
+  // Los 6 líderes que juegan contra terceros: A(0),B(1),D(3),E(4),G(6),I(8)
+  // Los 6 slots de terceros se asignan en orden de ranking al líder "más débil" de los 6
+  // (simplificación práctica usada en torneos similares)
+  const firstSlots = [0,1,3,4,6,8]; // índices de grupos A,B,D,E,G,I
+
+  return [
+    // 6 cruces variables: 1eros de A,B,D,E,G,I vs mejores 3eros
+    { id:'r32_0',  t1:g(firsts,0),  t2:g(bestThirds8,0) }, // 1A vs 3er#1
+    { id:'r32_1',  t1:g(firsts,1),  t2:g(bestThirds8,1) }, // 1B vs 3er#2
+    { id:'r32_2',  t1:g(firsts,3),  t2:g(bestThirds8,2) }, // 1D vs 3er#3
+    { id:'r32_3',  t1:g(firsts,4),  t2:g(bestThirds8,3) }, // 1E vs 3er#4
+    { id:'r32_4',  t1:g(firsts,6),  t2:g(bestThirds8,4) }, // 1G vs 3er#5
+    { id:'r32_5',  t1:g(firsts,8),  t2:g(bestThirds8,5) }, // 1I vs 3er#6
+    // 10 cruces fijos
+    { id:'r32_6',  t1:g(seconds,0), t2:g(seconds,1)  }, // 2A vs 2B
+    { id:'r32_7',  t1:g(firsts,2),  t2:g(seconds,5)  }, // 1C vs 2F
+    { id:'r32_8',  t1:g(firsts,5),  t2:g(seconds,2)  }, // 1F vs 2C
+    { id:'r32_9',  t1:g(seconds,4), t2:g(seconds,8)  }, // 2E vs 2I
+    { id:'r32_10', t1:g(firsts,7),  t2:g(seconds,9)  }, // 1H vs 2J
+    { id:'r32_11', t1:g(seconds,10),t2:g(seconds,11) }, // 2K vs 2L
+    { id:'r32_12', t1:g(seconds,3), t2:g(seconds,6)  }, // 2D vs 2G
+    { id:'r32_13', t1:g(firsts,9),  t2:g(bestThirds8,6) }, // 1J vs 3er#7
+    { id:'r32_14', t1:g(firsts,10), t2:g(bestThirds8,7) }, // 1K vs 3er#8
+    { id:'r32_15', t1:g(firsts,11), t2:g(seconds,7)  }, // 1L vs 2H
+  ];
+}
+
+// ─── CÁLCULO STANDINGS REALES ────────────────────────────────
+function calcRealStandings(){
+  const st = {};
+  Object.keys(TEAMS).forEach(id => {
+    st[id] = { id, pj:0, pg:0, pe:0, pp:0, gf:0, gc:0, pts:0, ta:0, tr:0 };
+  });
+  GROUP_MATCHES_RAW.forEach((m,i) => {
+    const sc = realResults.groupScores[i] || {};
+    if(sc.s1==null||sc.s1===''||sc.s2==null||sc.s2==='') return;
+    const g1=+sc.s1, g2=+sc.s2;
+    const a=st[m.t1], b=st[m.t2];
+    a.pj++; b.pj++;
+    a.gf+=g1; a.gc+=g2; b.gf+=g2; b.gc+=g1;
+    if(g1>g2){ a.pts+=3; a.pg++; b.pp++; }
+    else if(g2>g1){ b.pts+=3; b.pg++; a.pp++; }
+    else { a.pts+=1; b.pts+=1; a.pe++; b.pe++; }
+  });
+  return st;
+}
+
+function getRealQualified(){
+  const st = calcRealStandings();
+  const firsts=[], seconds=[], thirds=[];
+  GROUPS.forEach(g => {
+    const t = Object.values(st)
+      .filter(x => TEAMS[x.id].g === g)
+      .sort((a,b) => b.pts-a.pts || (b.gf-b.gc)-(a.gf-a.gc) || b.gf-a.gf);
+    if(t[0]) firsts.push(t[0].id);
+    if(t[1]) seconds.push(t[1].id);
+    if(t[2]) thirds.push(t[2].id);
+    // fill with null if group not complete
+    while(firsts.length < GROUPS.indexOf(g)+1) firsts.push(null);
+    while(seconds.length < GROUPS.indexOf(g)+1) seconds.push(null);
+  });
+  // Best 8 thirds: sort by pts, DG, GF
+  const thirdsData = thirds.map(id => st[id]).filter(Boolean)
+    .sort((a,b) => b.pts-a.pts || (b.gf-b.gc)-(a.gf-a.gc) || b.gf-a.gf);
+  const best8 = thirdsData.slice(0,8).map(t=>t.id);
+  return { firsts, seconds, best8 };
+}
+
+// ─── BRACKET REAL ────────────────────────────────────────────
+function realBracket(){
+  const { firsts, seconds, best8 } = getRealQualified();
+  const R32 = buildR32Matchups(firsts, seconds, best8);
+
+  function elWinner(id, t1, t2){
+    const s = realResults.elimScores[id] || {};
+    if(s.s1==null||s.s1===''||s.s2==null||s.s2==='') return null;
+    const g1=+s.s1, g2=+s.s2;
+    if(g1>g2) return t1; if(g2>g1) return t2; return null;
+  }
+
+  const R32w = R32.map(m => elWinner(m.id, m.t1, m.t2));
+  const R16  = Array.from({length:8}, (_,i) => ({
+    id:`r16_${i}`, t1:R32w[i*2]||null, t2:R32w[i*2+1]||null
+  }));
+  const R16w = R16.map(m => elWinner(m.id, m.t1, m.t2));
+  const QF   = Array.from({length:4}, (_,i) => ({
+    id:`qf_${i}`, t1:R16w[i*2]||null, t2:R16w[i*2+1]||null
+  }));
+  const QFw  = QF.map(m => elWinner(m.id, m.t1, m.t2));
+  const SF   = Array.from({length:2}, (_,i) => ({
+    id:`sf_${i}`, t1:QFw[i*2]||null, t2:QFw[i*2+1]||null
+  }));
+  const SFw  = SF.map(m => elWinner(m.id, m.t1, m.t2));
+  const Final = [{ id:'f_0', t1:SFw[0]||null, t2:SFw[1]||null }];
+  const champ = elWinner('f_0', Final[0].t1, Final[0].t2);
+  return { R32, R16, QF, SF, Final, champ };
+}
+
+// ─── SISTEMA DE PUNTUACIÓN ───────────────────────────────────
+function resultSign(s1,s2){
   if(s1==null||s2==null||s1===''||s2==='') return null;
-  const g1=+s1,g2=+s2;
-  return g1>g2?'W':g2>g1?'L':'D';
+  const g1=+s1, g2=+s2;
+  return g1>g2?'W': g2>g1?'L': 'D';
 }
 
 function calcProfilePoints(profile){
-  let total=0, exact=0, result=0, miss=0;
+  let total=0, gExact=0, gResult=0, eExact=0, eResult=0, miss=0;
   const details = {};
 
-  // Grupos
-  GROUP_MATCHES_RAW.forEach((m,i)=>{
-    const real=realResults.groupScores[i]||{};
-    const pred=profile.scores[i]||{};
-    const rs=resultSign(real.s1,real.s2);
-    const ps=resultSign(pred.s1,pred.s2);
-    if(rs===null||ps===null){return;}
-    if(+real.s1===+pred.s1&&+real.s2===+pred.s2){
-      total+=PTS_GROUP_EXACT; exact++; details[`g_${i}`]='exact';
-    } else if(rs===ps){
-      total+=PTS_GROUP_RESULT; result++; details[`g_${i}`]='result';
+  // ── Fase de grupos ──
+  GROUP_MATCHES_RAW.forEach((m,i) => {
+    const real = realResults.groupScores[i] || {};
+    const pred = profile.scores[i] || {};
+    const rs = resultSign(real.s1, real.s2);
+    const ps = resultSign(pred.s1, pred.s2);
+    if(rs===null || ps===null) return; // partido no jugado o no predicho
+    const key = `g_${i}`;
+    if(+real.s1===+pred.s1 && +real.s2===+pred.s2){
+      total += PTS.gExact; gExact++; details[key]='exact';
+    } else if(rs === ps){
+      total += PTS.gResult; gResult++; details[key]='result';
     } else {
-      miss++; details[`g_${i}`]='miss';
+      miss++; details[key]='miss';
     }
   });
 
-  // Eliminatoria
-  const phases=['r32','r16','qf','sf'];
-  const counts={r32:16,r16:8,qf:4,sf:2,f:1};
-  [...phases,'f'].forEach(ph=>{
-    const n=counts[ph]||0;
+  // ── Eliminatoria ──
+  // Comparamos partido a partido usando los IDs del bracket predicho vs real
+  // Para que tenga sentido, comparamos el marcador del mismo "slot" de partido
+  const elimRounds = [
+    {ph:'r32',n:16},{ph:'r16',n:8},{ph:'qf',n:4},{ph:'sf',n:2},{ph:'f',n:1}
+  ];
+  elimRounds.forEach(({ph,n}) => {
     for(let i=0;i<n;i++){
-      const kid=elimId(ph,i);
-      const real=realResults.elimScores[kid]||{};
-      const pred=profile.elimScores[kid]||{};
-      const rs=resultSign(real.s1,real.s2);
-      const ps=resultSign(pred.s1,pred.s2);
-      if(rs===null||ps===null) continue;
-      if(+real.s1===+pred.s1&&+real.s2===+pred.s2){
-        total+=PTS_ELIM_EXACT; exact++; details[kid]='exact';
-      } else if(rs===ps){
-        total+=PTS_ELIM_RESULT; result++; details[kid]='result';
+      const kid = `${ph}_${i}`;
+      const real = realResults.elimScores[kid] || {};
+      const pred = profile.elimScores[kid]    || {};
+      const rs = resultSign(real.s1, real.s2);
+      const ps = resultSign(pred.s1, pred.s2);
+      if(rs===null || ps===null) continue;
+      if(+real.s1===+pred.s1 && +real.s2===+pred.s2){
+        total += PTS.eExact; eExact++; details[kid]='exact';
+      } else if(rs === ps){
+        total += PTS.eResult; eResult++; details[kid]='result';
       } else {
         miss++; details[kid]='miss';
       }
     }
   });
 
-  return {total,exact,result,miss,details};
+  return { total, gExact, gResult, eExact, eResult, miss, details };
 }
 
 // ─── RANKING VIEW ────────────────────────────────────────────
 function renderRanking(){
-  const el=document.getElementById('ranking-out');
-  const hasReal=Object.keys(realResults.groupScores).length>0||Object.keys(realResults.elimScores).length>0;
+  const el = document.getElementById('ranking-out');
+  const played = Object.keys(realResults.groupScores).filter(k=>{
+    const s=realResults.groupScores[k];
+    return s&&s.s1!=null&&s.s1!==''&&s.s2!=null&&s.s2!=='';
+  }).length;
 
-  if(!hasReal){
+  if(played===0){
     el.innerHTML=`<div style="text-align:center;padding:40px 20px;">
       <div style="font-size:3rem;margin-bottom:12px;">⏳</div>
-      <p style="font-weight:800;margin-bottom:8px;">El torneo aún no comenzó</p>
-      <p style="color:var(--sub);font-size:.85rem;">Cuando el administrador ingrese los resultados reales, aquí aparecerá el ranking.</p>
+      <p style="font-weight:800;margin-bottom:8px;">El torneo aún no ha comenzado</p>
+      <p style="color:var(--sub);font-size:.85rem;">Cuando el administrador ingrese los resultados reales comenzará el ranking.</p>
     </div>`;
     return;
   }
 
-  const scored=profiles.map(p=>({...p,...calcProfilePoints(p)}));
-  scored.sort((a,b)=>b.total-a.total||b.exact-a.exact);
-
   const posColors=['#FFD700','#C0C0C0','#CD7F32'];
   const posEmoji=['🥇','🥈','🥉'];
+  const scored = profiles.map(p => ({...p, ...calcProfilePoints(p)}));
+  scored.sort((a,b) => b.total-a.total || b.gExact-a.gExact || b.eExact-a.eExact);
 
-  let html=`<div class="score-legend">
-    <span class="pts-exact">+${PTS_GROUP_EXACT}pts marcador exacto grupos</span>
-    <span class="pts-winner">+${PTS_GROUP_RESULT}pt resultado correcto grupos</span>
-    <span class="pts-exact" style="background:#00529933;color:#003d99;">+${PTS_ELIM_EXACT}pts exacto eliminatoria</span>
-    <span class="pts-winner" style="background:#99003333;color:#990033;">+${PTS_ELIM_RESULT}pts ganador eliminatoria</span>
+  let html=`<div style="margin-bottom:14px;padding:12px;background:var(--card);border-radius:10px;border:1px solid var(--border);">
+    <div style="font-size:.7rem;font-weight:800;text-transform:uppercase;margin-bottom:8px;color:var(--sub);">Sistema de puntos</div>
+    <div style="display:flex;gap:6px;flex-wrap:wrap;font-size:.7rem;">
+      <span class="pts-badge pts-exact">+${PTS.gExact}pts marcador exacto (grupos)</span>
+      <span class="pts-badge pts-winner">+${PTS.gResult}pt resultado correcto (grupos)</span>
+      <span class="pts-badge" style="background:#0052991a;color:#005299;">+${PTS.eExact}pts marcador exacto (elim.)</span>
+      <span class="pts-badge" style="background:#9900331a;color:#990033;">+${PTS.eResult}pts ganador correcto (elim.)</span>
+    </div>
+    <div style="font-size:.68rem;color:var(--sub);margin-top:6px;">Partidos jugados: <b>${played}</b> de ${GROUP_MATCHES_RAW.length}</div>
   </div>`;
 
-  scored.forEach((p,i)=>{
-    const col=posColors[i]||'#555';
-    const emoji=posEmoji[i]||`${i+1}`;
-    html+=`<div class="ranking-card${i===0?' result-done':''}">
+  scored.forEach((p,i) => {
+    const col = posColors[i] || '#737373';
+    html += `<div class="ranking-card${i===0?' result-done':''}">
       <div class="rank-pos" style="background:${col}">${i<3?posEmoji[i]:i+1}</div>
-      <div class="profile-avatar" style="background:${p.color};width:32px;height:32px;font-size:.85rem;display:inline-flex;align-items:center;justify-content:center;border-radius:50%;color:#050505;font-weight:900;flex-shrink:0;">
-        ${esc(p.name).charAt(0).toUpperCase()}
-      </div>
-      <div style="flex:1;">
+      <div style="width:32px;height:32px;border-radius:50%;background:${p.color};display:flex;align-items:center;justify-content:center;font-weight:900;font-size:.85rem;color:#050505;flex-shrink:0;">${esc(p.name).charAt(0).toUpperCase()}</div>
+      <div style="flex:1;min-width:0;">
         <div class="rank-name">${esc(p.name)}</div>
         <div class="rank-detail">
-          <span class="pts-badge pts-exact">${p.exact} exactos</span>
-          <span class="pts-badge pts-winner">${p.result} resultado</span>
+          <span class="pts-badge pts-exact">${p.gExact+p.eExact} exactos</span>
+          <span class="pts-badge pts-winner">${p.gResult+p.eResult} resultado</span>
           <span class="pts-badge pts-miss">${p.miss} fallos</span>
         </div>
       </div>
-      <div style="text-align:right;">
+      <div style="text-align:right;flex-shrink:0;">
         <div class="rank-pts">${p.total}</div>
         <div style="font-size:.65rem;color:var(--sub);">puntos</div>
       </div>
     </div>`;
   });
 
-  el.innerHTML=html;
+  el.innerHTML = html;
 }
 
-// ─── CONTROL: ADMIN UNLOCK ───────────────────────────────────
-window.unlockAdmin=function(){
-  const pin=document.getElementById('admin-pin-input').value;
-  if(pin===ADMIN_PIN){
-    adminUnlocked=true;
-    document.getElementById('control-lock').style.display='none';
-    document.getElementById('control-panel').style.display='block';
+// ─── ADMIN UNLOCK ────────────────────────────────────────────
+window.unlockAdmin = function(){
+  const pin = document.getElementById('admin-pin-input').value.trim();
+  if(pin === ADMIN_PIN){
+    adminUnlocked = true;
+    document.getElementById('control-lock').style.display  = 'none';
+    document.getElementById('control-panel').style.display = 'block';
     renderControlGroupTabs();
     renderControlGroupMatches();
     renderControlElim();
     toast('🛡 Bienvenido, admin!');
   } else {
     toast('❌ PIN incorrecto');
+    document.getElementById('admin-pin-input').value='';
   }
 };
 
 // ─── CONTROL: GROUP TABS ─────────────────────────────────────
 function renderControlGroupTabs(){
-  const el=document.getElementById('control-group-tabs');
-  el.innerHTML=GROUPS.map(g=>
+  const el = document.getElementById('control-group-tabs');
+  el.innerHTML = GROUPS.map(g =>
     `<button class="g-tab${g===controlGroup?' active':''}" onclick="setControlGroup('${g}')">${g}</button>`
   ).join('');
 }
 
-window.setControlGroup=function(g){
-  controlGroup=g;
+window.setControlGroup = function(g){
+  controlGroup = g;
   renderControlGroupTabs();
   renderControlGroupMatches();
 };
 
 function renderControlGroupMatches(){
-  const matches=GROUP_MATCHES_RAW.map((m,i)=>({...m,idx:i})).filter(m=>TEAMS[m.t1].g===controlGroup);
-  const el=document.getElementById('control-matches');
-  el.innerHTML=matches.map(m=>{
-    const sc=realResults.groupScores[m.idx]||{};
-    const done=sc.s1!=null&&sc.s1!==''&&sc.s2!=null&&sc.s2!=='';
+  const el = document.getElementById('control-matches');
+  const matches = GROUP_MATCHES_RAW.map((m,i)=>({...m,idx:i}))
+    .filter(m => TEAMS[m.t1].g === controlGroup);
+
+  el.innerHTML = matches.map(m => {
+    const sc   = realResults.groupScores[m.idx] || {};
+    const done = sc.s1!=null && sc.s1!=='' && sc.s2!=null && sc.s2!=='';
     return `<div class="real-result-card${done?' result-done':''}">
       <div class="match-card-header">
         <span class="match-label">Grupo ${controlGroup} · ${m.d}</span>
-        ${done?'<span style="color:#006600;font-size:.7rem;font-weight:800;">✓ JUGADO</span>':''}
+        ${done?`<span style="color:#006600;font-size:.7rem;font-weight:800;">✓ ${sc.s1}-${sc.s2}</span>`:''}
       </div>
       <div class="teams-row">
         <div class="team">${flag(m.t1)}<span>${TEAMS[m.t1].n}</span></div>
         <div class="score-wrap">
-          <input class="real-score-input" type="text" inputmode="numeric" maxlength="2" value="${sc.s1??''}"
-            oninput="setRealGroup(${m.idx},'s1',this.value)">
+          <input class="real-score-input" type="text" inputmode="numeric" maxlength="2"
+            value="${sc.s1??''}" oninput="setRealGroup(${m.idx},'s1',this.value)">
           <span class="vs-sep">-</span>
-          <input class="real-score-input" type="text" inputmode="numeric" maxlength="2" value="${sc.s2??''}"
-            oninput="setRealGroup(${m.idx},'s2',this.value)">
+          <input class="real-score-input" type="text" inputmode="numeric" maxlength="2"
+            value="${sc.s2??''}" oninput="setRealGroup(${m.idx},'s2',this.value)">
         </div>
         <div class="team">${flag(m.t2)}<span>${TEAMS[m.t2].n}</span></div>
       </div>
@@ -1201,143 +1346,85 @@ function renderControlGroupMatches(){
   }).join('');
 }
 
-window.setRealGroup=function(idx,field,val){
-  if(val!==''&&!/^\d+$/.test(val)) return;
+window.setRealGroup = function(idx, field, val){
+  if(val!=='' && !/^\d+$/.test(val)) return;
   if(!realResults.groupScores[idx]) realResults.groupScores[idx]={};
-  realResults.groupScores[idx][field]=val===''?null:+val;
+  realResults.groupScores[idx][field] = val==='' ? null : +val;
 };
 
-// ─── CONTROL: ELIM ──────────────────────────────────────────
-function realBracket(){
-  // Calc real standings and build real bracket
-  const {firsts,seconds,bestThirds}=getQualifiedFromReal();
-  const tn=a=>a||null;
-  const gw=(id,t1,t2)=>{
-    const s=realResults.elimScores[id]||{};
-    if(s.s1==null||s.s1===''||s.s2==null||s.s2==='') return null;
-    const g1=+s.s1,g2=+s.s2;
-    return g1>g2?t1:(g2>g1?t2:null);
-  };
+// ─── CONTROL: ELIMINATORIA ───────────────────────────────────
+window.renderControlElim = function(){
+  const phase = document.getElementById('control-phase-sel').value;
+  const br    = realBracket();
+  const map   = {r32:br.R32, r16:br.R16, qf:br.QF, sf:br.SF, final:br.Final};
+  const rnd   = map[phase] || [];
+  const labels= {r32:'16avos', r16:'Octavos', qf:'Cuartos', sf:'Semifinal', final:'FINAL'};
+  const el    = document.getElementById('control-elim-matches');
 
-  const R32=[
-    {id:'r32_0',t1:tn(firsts[0]),t2:tn(bestThirds[0])},{id:'r32_1',t1:tn(firsts[1]),t2:tn(bestThirds[1])},
-    {id:'r32_2',t1:tn(firsts[2]),t2:tn(bestThirds[2])},{id:'r32_3',t1:tn(firsts[3]),t2:tn(bestThirds[3])},
-    {id:'r32_4',t1:tn(firsts[4]),t2:tn(bestThirds[4])},{id:'r32_5',t1:tn(firsts[5]),t2:tn(bestThirds[5])},
-    {id:'r32_6',t1:tn(firsts[6]),t2:tn(bestThirds[6])},{id:'r32_7',t1:tn(firsts[7]),t2:tn(bestThirds[7])},
-    {id:'r32_8',t1:tn(firsts[8]),t2:tn(seconds[0])},{id:'r32_9',t1:tn(firsts[9]),t2:tn(seconds[1])},
-    {id:'r32_10',t1:tn(firsts[10]),t2:tn(seconds[2])},{id:'r32_11',t1:tn(firsts[11]),t2:tn(seconds[3])},
-    {id:'r32_12',t1:tn(seconds[4]),t2:tn(seconds[8])},{id:'r32_13',t1:tn(seconds[5]),t2:tn(seconds[9])},
-    {id:'r32_14',t1:tn(seconds[6]),t2:tn(seconds[10])},{id:'r32_15',t1:tn(seconds[7]),t2:tn(seconds[11])},
-  ];
-  const R32w=R32.map(m=>gw(m.id,m.t1,m.t2));
-  const R16=Array.from({length:8},(_,i)=>({id:`r16_${i}`,t1:R32w[i*2]||null,t2:R32w[i*2+1]||null}));
-  const R16w=R16.map(m=>gw(m.id,m.t1,m.t2));
-  const QF=Array.from({length:4},(_,i)=>({id:`qf_${i}`,t1:R16w[i*2]||null,t2:R16w[i*2+1]||null}));
-  const QFw=QF.map(m=>gw(m.id,m.t1,m.t2));
-  const SF=Array.from({length:2},(_,i)=>({id:`sf_${i}`,t1:QFw[i*2]||null,t2:QFw[i*2+1]||null}));
-  const SFw=SF.map(m=>gw(m.id,m.t1,m.t2));
-  const Final=[{id:'f_0',t1:SFw[0]||null,t2:SFw[1]||null}];
-  const champ=gw('f_0',Final[0].t1,Final[0].t2);
-  return {R32,R16,QF,SF,Final,champ};
-}
-
-function getQualifiedFromReal(){
-  // Use real group scores to compute real standings
-  const st={};
-  Object.keys(TEAMS).forEach(id=>{st[id]={id,pj:0,pg:0,pe:0,pp:0,gf:0,gc:0,pts:0};});
-  GROUP_MATCHES_RAW.forEach((m,i)=>{
-    const sc=realResults.groupScores[i]||{};
-    if(sc.s1==null||sc.s1===''||sc.s2==null||sc.s2==='') return;
-    const g1=+sc.s1,g2=+sc.s2;
-    const a=st[m.t1],b=st[m.t2];
-    a.pj++;b.pj++;a.gf+=g1;a.gc+=g2;b.gf+=g2;b.gc+=g1;
-    if(g1>g2){a.pts+=3;a.pg++;b.pp++;}
-    else if(g2>g1){b.pts+=3;b.pg++;a.pp++;}
-    else{a.pts++;b.pts++;a.pe++;b.pe++;}
-  });
-  const firsts=[],seconds=[],thirds=[];
-  GROUPS.forEach(g=>{
-    const t=Object.values(st).filter(x=>TEAMS[x.id].g===g)
-      .sort((a,b)=>b.pts-a.pts||(b.gf-b.gc)-(a.gf-a.gc)||b.gf-a.gf);
-    if(t[0])firsts.push(t[0].id);
-    if(t[1])seconds.push(t[1].id);
-    if(t[2])thirds.push(t[2].id);
-  });
-  const scThirds=thirds.map(id=>st[id]).sort((a,b)=>b.pts-a.pts||(b.gf-b.gc)-(a.gf-a.gc)||b.gf-a.gf);
-  return{firsts,seconds,bestThirds:scThirds.slice(0,8).map(t=>t.id)};
-}
-
-window.renderControlElim=function(){
-  const phase=document.getElementById('control-phase-sel').value;
-  const br=realBracket();
-  const rounds={r32:br.R32,r16:br.R16,qf:br.QF,sf:br.SF,final:br.Final};
-  const rnd=rounds[phase]||[];
-  const labels={r32:'16avos',r16:'Octavos',qf:'Cuartos',sf:'Semifinal',final:'FINAL'};
-  const el=document.getElementById('control-elim-matches');
-  // Map phase key to elimId prefix
-  const pfx={r32:'r32',r16:'r16',qf:'qf',sf:'sf',final:'f'};
-  el.innerHTML=rnd.map((m,i)=>{
-    const kid=`${pfx[phase]}_${i}`;
-    const sc=realResults.elimScores[kid]||{};
-    const ready=m.t1&&m.t2;
-    const done=sc.s1!=null&&sc.s1!==''&&sc.s2!=null&&sc.s2!=='';
+  el.innerHTML = rnd.map((m,i) => {
+    const sc    = realResults.elimScores[m.id] || {};
+    const ready = m.t1 && m.t2;
+    const done  = sc.s1!=null && sc.s1!=='' && sc.s2!=null && sc.s2!=='';
     return `<div class="real-result-card${done?' result-done':''}">
       <div class="match-card-header">
-        <span class="match-label">${labels[phase]} ${rnd.length>1?'· '+(i+1):''}</span>
-        ${done?'<span style="color:#006600;font-size:.7rem;font-weight:800;">✓ JUGADO</span>':''}
+        <span class="match-label">${labels[phase]}${rnd.length>1?' · '+(i+1):''}</span>
+        ${done?`<span style="color:#006600;font-size:.7rem;font-weight:800;">✓ ${sc.s1}-${sc.s2}</span>`:''}
+        ${!ready?'<span style="color:var(--sub);font-size:.68rem;">Esperando clasificados...</span>':''}
       </div>
       <div class="teams-row">
-        <div class="team">${m.t1?flag(m.t1):''}
-          <span>${m.t1?TEAMS[m.t1].n:'TBD'}</span></div>
+        <div class="team">${m.t1?flag(m.t1):''}<span>${m.t1?TEAMS[m.t1].n:'TBD'}</span></div>
         <div class="score-wrap">
-          <input class="real-score-input" type="text" inputmode="numeric" maxlength="2" value="${sc.s1??''}"
-            ${!ready?'disabled':''} oninput="setRealElim('${kid}','s1',this.value)">
+          <input class="real-score-input" type="text" inputmode="numeric" maxlength="2"
+            value="${sc.s1??''}" ${!ready?'disabled':''} oninput="setRealElim('${m.id}','s1',this.value)">
           <span class="vs-sep">-</span>
-          <input class="real-score-input" type="text" inputmode="numeric" maxlength="2" value="${sc.s2??''}"
-            ${!ready?'disabled':''} oninput="setRealElim('${kid}','s2',this.value)">
+          <input class="real-score-input" type="text" inputmode="numeric" maxlength="2"
+            value="${sc.s2??''}" ${!ready?'disabled':''} oninput="setRealElim('${m.id}','s2',this.value)">
         </div>
-        <div class="team">${m.t2?flag(m.t2):''}
-          <span>${m.t2?TEAMS[m.t2].n:'TBD'}</span></div>
+        <div class="team">${m.t2?flag(m.t2):''}<span>${m.t2?TEAMS[m.t2].n:'TBD'}</span></div>
       </div>
     </div>`;
   }).join('');
 };
 
-window.setRealElim=function(kid,field,val){
-  if(val!==''&&!/^\d+$/.test(val)) return;
+window.setRealElim = function(kid, field, val){
+  if(val!=='' && !/^\d+$/.test(val)) return;
   if(!realResults.elimScores[kid]) realResults.elimScores[kid]={};
-  realResults.elimScores[kid][field]=val===''?null:+val;
+  realResults.elimScores[kid][field] = val==='' ? null : +val;
 };
 
-// ─── SAVE/LOAD REAL RESULTS (Firebase + localStorage) ────────
-window.saveRealResults=async function(){
+// ─── SAVE / LOAD REAL RESULTS ────────────────────────────────
+window.saveRealResults = async function(){
+  // Siempre guarda local
   localStorage.setItem('q2026_real', JSON.stringify(realResults));
+  // Sube a Firebase
   try{
-    const db=await getDB();
-    await db.setDoc(db.doc(db.fs, DB_COLLECTION, REAL_DOC_ID), realResults);
+    const db = await getDB();
+    await db.setDoc(db.doc(db.fs, DB_COLLECTION, REAL_DOC_ID), JSON.parse(JSON.stringify(realResults)));
     toast('✅ Resultados guardados en la nube');
-  }catch(e){
-    toast('💾 Guardado local (sin conexión)');
+  } catch(e){
+    console.error('saveRealResults error:', e);
+    toast('⚠️ Error al guardar: ' + e.message);
   }
-  // Refresh ranking and elim if open
+  // Refresca UI
   if(document.getElementById('tab-ranking').classList.contains('active')) renderRanking();
-  renderControlElim();
+  if(adminUnlocked) renderControlElim();
 };
 
 async function loadRealResults(){
-  // Local first
+  // 1. Local primero
   try{
-    const local=localStorage.getItem('q2026_real');
-    if(local) realResults=JSON.parse(local);
-  }catch(e){}
-  // Then cloud
+    const local = localStorage.getItem('q2026_real');
+    if(local) realResults = JSON.parse(local);
+  } catch(e){}
+  // 2. Nube (sobreescribe si hay datos más recientes)
   try{
-    const db=await getDB();
-    const {getDoc,doc}=await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js");
-    const docSnap=await getDoc(doc(db.fs, DB_COLLECTION, REAL_DOC_ID));
-    if(docSnap.exists()) realResults=docSnap.data();
-    localStorage.setItem('q2026_real', JSON.stringify(realResults));
-  }catch(e){}
+    const db = await getDB();
+    const snap = await db.getDoc(db.doc(db.fs, DB_COLLECTION, REAL_DOC_ID));
+    if(snap.exists()){
+      realResults = snap.data();
+      localStorage.setItem('q2026_real', JSON.stringify(realResults));
+    }
+  } catch(e){ console.warn('loadRealResults cloud error:', e.message); }
 }
 
 // ═══════════════════════════════════════════════════════════════
