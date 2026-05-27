@@ -145,6 +145,31 @@ body.dark .cmp-score.win{color:var(--neon);}
 #toast{position:fixed;bottom:40px;left:50%;transform:translateX(-50%);background:var(--toast-bg);color:var(--toast-txt);padding:12px 24px;border-radius:8px;font-weight:800;font-size:.85rem;z-index:9999;opacity:0;transition:opacity .3s;pointer-events:none;}
 #toast.show{opacity:1;}
 
+/* ── RANKING ── */
+.ranking-card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:14px 16px;margin-bottom:10px;display:flex;align-items:center;gap:14px;}
+.rank-pos{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:.9rem;color:#fff;flex-shrink:0;}
+.rank-name{flex:1;font-weight:800;font-size:.95rem;}
+.rank-pts{font-size:1.5rem;font-weight:900;color:var(--purple);}
+.rank-detail{font-size:.7rem;color:var(--sub);margin-top:2px;}
+.pts-badge{display:inline-block;padding:2px 7px;border-radius:6px;font-size:.68rem;font-weight:700;margin:1px;}
+.pts-exact{background:#C6FF0033;color:#006600;}
+.pts-winner{background:#4B008233;color:var(--purple);}
+.pts-miss{background:#eee;color:#999;}
+body.dark .pts-miss{background:#333;color:#888;}
+body.dark .pts-exact{color:#7fff00;}
+
+/* ── CONTROL PANEL ── */
+.real-result-card{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:10px;}
+.real-score-input{width:42px;height:38px;text-align:center;font-size:1rem;font-weight:900;border:2px solid var(--input-border);border-radius:8px;background:var(--score-bg);color:var(--text);outline:none;}
+.real-score-input:focus{border-color:#C6FF00;}
+.result-done{background:rgba(198,255,0,.08);}
+.tab-admin{border-color:#FF0054!important;color:#FF0054!important;}
+.tab-admin.active{background:#FF0054!important;color:#fff!important;}
+
+/* ── SCORE SYSTEM INFO ── */
+.score-legend{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;font-size:.72rem;}
+.score-legend span{padding:4px 10px;border-radius:6px;font-weight:700;}
+
 /* ── RESPONSIVE ── */
 @media(max-width:480px){
   header h1{font-size:1.2rem;}
@@ -204,10 +229,12 @@ body.dark .cmp-score.win{color:var(--neon);}
 
 <!-- TABS -->
 <div class="tabs">
-  <button class="tab-btn active" onclick="goTab('grupos',this)">Grupos</button>
-  <button class="tab-btn" onclick="goTab('eliminatoria',this)">Eliminatoria</button>
-  <button class="tab-btn" onclick="goTab('resumen',this)">Mi Bracket</button>
-  <button class="tab-btn" onclick="goTab('comparar',this)">Comparar</button>
+  <button class="tab-btn active" onclick="goTab('grupos',this)">⚽ Grupos</button>
+  <button class="tab-btn" onclick="goTab('eliminatoria',this)">🏆 Eliminatoria</button>
+  <button class="tab-btn" onclick="goTab('resumen',this)">📋 Mi Bracket</button>
+  <button class="tab-btn" onclick="goTab('ranking',this)">🥇 Ranking</button>
+  <button class="tab-btn" onclick="goTab('comparar',this)">🔍 Comparar</button>
+  <button class="tab-btn tab-admin" onclick="goTab('control',this)">🛡 Control</button>
 </div>
 
 <!-- TAB: GRUPOS -->
@@ -250,6 +277,46 @@ body.dark .cmp-score.win{color:var(--neon);}
     <select id="cmp-b" onchange="renderCompare()"></select>
   </div>
   <div id="compare-out"></div>
+</div>
+
+<!-- TAB: RANKING -->
+<div id="tab-ranking" class="container">
+  <div id="ranking-out"></div>
+</div>
+
+<!-- TAB: CONTROL (admin) -->
+<div id="tab-control" class="container">
+  <div id="control-lock">
+    <div style="text-align:center;padding:40px 20px;">
+      <div style="font-size:3rem;margin-bottom:12px;">🔒</div>
+      <p style="font-weight:800;margin-bottom:16px;">Zona de Administrador</p>
+      <p style="color:var(--sub);font-size:.85rem;margin-bottom:20px;">Solo el organizador puede ingresar los resultados reales.</p>
+      <div style="display:flex;gap:8px;max-width:280px;margin:0 auto;">
+        <input type="password" id="admin-pin-input" placeholder="PIN admin..." class="phase-sel" style="flex:1;margin:0;">
+        <button class="save-btn" onclick="unlockAdmin()" style="margin:0;width:auto;padding:11px 18px;">Entrar</button>
+      </div>
+      <p style="font-size:.72rem;color:var(--sub);margin-top:10px;">PIN por defecto: <b>2026</b> — cámbialo en el código.</p>
+    </div>
+  </div>
+  <div id="control-panel" style="display:none;">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:8px;">
+      <h3 style="font-weight:900;font-size:1rem;">📋 Resultados Reales</h3>
+      <button class="save-btn" onclick="saveRealResults()" style="margin:0;width:auto;padding:10px 18px;">💾 Guardar resultados</button>
+    </div>
+    <div class="group-tabs" id="control-group-tabs"></div>
+    <div id="control-matches"></div>
+    <div style="margin-top:24px;padding-top:16px;border-top:2px solid var(--border);">
+      <h4 style="font-weight:900;margin-bottom:12px;font-size:.9rem;">🏆 Resultados Eliminatoria Real</h4>
+      <select id="control-phase-sel" class="phase-sel" onchange="renderControlElim()">
+        <option value="r32">16avos de Final</option>
+        <option value="r16">Octavos de Final</option>
+        <option value="qf">Cuartos de Final</option>
+        <option value="sf">Semifinales</option>
+        <option value="final">Final</option>
+      </select>
+      <div id="control-elim-matches"></div>
+    </div>
+  </div>
 </div>
 
 <div id="toast"></div>
@@ -423,7 +490,9 @@ async function loadFromCloud(){
     const db = await getDB();
     const snap = await db.getDocs(db.collection(db.fs, DB_COLLECTION));
     const cloudProfiles = [];
-    snap.forEach(d => cloudProfiles.push(d.data()));
+    snap.forEach(d => {
+      if(d.id !== REAL_DOC_ID) cloudProfiles.push(d.data());
+    });
     if(cloudProfiles.length > 0) profiles = cloudProfiles;
   }catch(e){
     console.warn("Firebase no disponible, usando localStorage:", e.message);
@@ -952,6 +1021,326 @@ window.renderCompare=function(){
 };
 
 // ═══════════════════════════════════════════════════════════════
+// RESULTADOS REALES + SISTEMA DE PUNTOS
+// ═══════════════════════════════════════════════════════════════
+
+const ADMIN_PIN = "2026"; // Cambia esto si quieres otro PIN
+const REAL_DOC_ID = "__resultados_reales__";
+
+// Estado resultados reales
+// realResults = { groupScores:{idx:{s1,s2}}, elimScores:{id:{s1,s2}} }
+let realResults = { groupScores:{}, elimScores:{} };
+let adminUnlocked = false;
+let controlGroup = 'A';
+
+// ─── SISTEMA DE PUNTOS ───────────────────────────────────────
+// Fase de grupos: 1pt resultado correcto (G/E/P), 3pts marcador exacto
+// Eliminatoria: 2pts ganador correcto, 5pts marcador exacto
+const PTS_GROUP_RESULT  = 1;
+const PTS_GROUP_EXACT   = 3;
+const PTS_ELIM_RESULT   = 2;
+const PTS_ELIM_EXACT    = 5;
+
+function resultSign(s1, s2){
+  if(s1==null||s2==null||s1===''||s2==='') return null;
+  const g1=+s1,g2=+s2;
+  return g1>g2?'W':g2>g1?'L':'D';
+}
+
+function calcProfilePoints(profile){
+  let total=0, exact=0, result=0, miss=0;
+  const details = {};
+
+  // Grupos
+  GROUP_MATCHES_RAW.forEach((m,i)=>{
+    const real=realResults.groupScores[i]||{};
+    const pred=profile.scores[i]||{};
+    const rs=resultSign(real.s1,real.s2);
+    const ps=resultSign(pred.s1,pred.s2);
+    if(rs===null||ps===null){return;}
+    if(+real.s1===+pred.s1&&+real.s2===+pred.s2){
+      total+=PTS_GROUP_EXACT; exact++; details[`g_${i}`]='exact';
+    } else if(rs===ps){
+      total+=PTS_GROUP_RESULT; result++; details[`g_${i}`]='result';
+    } else {
+      miss++; details[`g_${i}`]='miss';
+    }
+  });
+
+  // Eliminatoria
+  const phases=['r32','r16','qf','sf'];
+  const counts={r32:16,r16:8,qf:4,sf:2,f:1};
+  [...phases,'f'].forEach(ph=>{
+    const n=counts[ph]||0;
+    for(let i=0;i<n;i++){
+      const kid=elimId(ph,i);
+      const real=realResults.elimScores[kid]||{};
+      const pred=profile.elimScores[kid]||{};
+      const rs=resultSign(real.s1,real.s2);
+      const ps=resultSign(pred.s1,pred.s2);
+      if(rs===null||ps===null) continue;
+      if(+real.s1===+pred.s1&&+real.s2===+pred.s2){
+        total+=PTS_ELIM_EXACT; exact++; details[kid]='exact';
+      } else if(rs===ps){
+        total+=PTS_ELIM_RESULT; result++; details[kid]='result';
+      } else {
+        miss++; details[kid]='miss';
+      }
+    }
+  });
+
+  return {total,exact,result,miss,details};
+}
+
+// ─── RANKING VIEW ────────────────────────────────────────────
+function renderRanking(){
+  const el=document.getElementById('ranking-out');
+  const hasReal=Object.keys(realResults.groupScores).length>0||Object.keys(realResults.elimScores).length>0;
+
+  if(!hasReal){
+    el.innerHTML=`<div style="text-align:center;padding:40px 20px;">
+      <div style="font-size:3rem;margin-bottom:12px;">⏳</div>
+      <p style="font-weight:800;margin-bottom:8px;">El torneo aún no comenzó</p>
+      <p style="color:var(--sub);font-size:.85rem;">Cuando el administrador ingrese los resultados reales, aquí aparecerá el ranking.</p>
+    </div>`;
+    return;
+  }
+
+  const scored=profiles.map(p=>({...p,...calcProfilePoints(p)}));
+  scored.sort((a,b)=>b.total-a.total||b.exact-a.exact);
+
+  const posColors=['#FFD700','#C0C0C0','#CD7F32'];
+  const posEmoji=['🥇','🥈','🥉'];
+
+  let html=`<div class="score-legend">
+    <span class="pts-exact">+${PTS_GROUP_EXACT}pts marcador exacto grupos</span>
+    <span class="pts-winner">+${PTS_GROUP_RESULT}pt resultado correcto grupos</span>
+    <span class="pts-exact" style="background:#00529933;color:#003d99;">+${PTS_ELIM_EXACT}pts exacto eliminatoria</span>
+    <span class="pts-winner" style="background:#99003333;color:#990033;">+${PTS_ELIM_RESULT}pts ganador eliminatoria</span>
+  </div>`;
+
+  scored.forEach((p,i)=>{
+    const col=posColors[i]||'#555';
+    const emoji=posEmoji[i]||`${i+1}`;
+    html+=`<div class="ranking-card${i===0?' result-done':''}">
+      <div class="rank-pos" style="background:${col}">${i<3?posEmoji[i]:i+1}</div>
+      <div class="profile-avatar" style="background:${p.color};width:32px;height:32px;font-size:.85rem;display:inline-flex;align-items:center;justify-content:center;border-radius:50%;color:#050505;font-weight:900;flex-shrink:0;">
+        ${esc(p.name).charAt(0).toUpperCase()}
+      </div>
+      <div style="flex:1;">
+        <div class="rank-name">${esc(p.name)}</div>
+        <div class="rank-detail">
+          <span class="pts-badge pts-exact">${p.exact} exactos</span>
+          <span class="pts-badge pts-winner">${p.result} resultado</span>
+          <span class="pts-badge pts-miss">${p.miss} fallos</span>
+        </div>
+      </div>
+      <div style="text-align:right;">
+        <div class="rank-pts">${p.total}</div>
+        <div style="font-size:.65rem;color:var(--sub);">puntos</div>
+      </div>
+    </div>`;
+  });
+
+  el.innerHTML=html;
+}
+
+// ─── CONTROL: ADMIN UNLOCK ───────────────────────────────────
+window.unlockAdmin=function(){
+  const pin=document.getElementById('admin-pin-input').value;
+  if(pin===ADMIN_PIN){
+    adminUnlocked=true;
+    document.getElementById('control-lock').style.display='none';
+    document.getElementById('control-panel').style.display='block';
+    renderControlGroupTabs();
+    renderControlGroupMatches();
+    renderControlElim();
+    toast('🛡 Bienvenido, admin!');
+  } else {
+    toast('❌ PIN incorrecto');
+  }
+};
+
+// ─── CONTROL: GROUP TABS ─────────────────────────────────────
+function renderControlGroupTabs(){
+  const el=document.getElementById('control-group-tabs');
+  el.innerHTML=GROUPS.map(g=>
+    `<button class="g-tab${g===controlGroup?' active':''}" onclick="setControlGroup('${g}')">${g}</button>`
+  ).join('');
+}
+
+window.setControlGroup=function(g){
+  controlGroup=g;
+  renderControlGroupTabs();
+  renderControlGroupMatches();
+};
+
+function renderControlGroupMatches(){
+  const matches=GROUP_MATCHES_RAW.map((m,i)=>({...m,idx:i})).filter(m=>TEAMS[m.t1].g===controlGroup);
+  const el=document.getElementById('control-matches');
+  el.innerHTML=matches.map(m=>{
+    const sc=realResults.groupScores[m.idx]||{};
+    const done=sc.s1!=null&&sc.s1!==''&&sc.s2!=null&&sc.s2!=='';
+    return `<div class="real-result-card${done?' result-done':''}">
+      <div class="match-card-header">
+        <span class="match-label">Grupo ${controlGroup} · ${m.d}</span>
+        ${done?'<span style="color:#006600;font-size:.7rem;font-weight:800;">✓ JUGADO</span>':''}
+      </div>
+      <div class="teams-row">
+        <div class="team">${flag(m.t1)}<span>${TEAMS[m.t1].n}</span></div>
+        <div class="score-wrap">
+          <input class="real-score-input" type="text" inputmode="numeric" maxlength="2" value="${sc.s1??''}"
+            oninput="setRealGroup(${m.idx},'s1',this.value)">
+          <span class="vs-sep">-</span>
+          <input class="real-score-input" type="text" inputmode="numeric" maxlength="2" value="${sc.s2??''}"
+            oninput="setRealGroup(${m.idx},'s2',this.value)">
+        </div>
+        <div class="team">${flag(m.t2)}<span>${TEAMS[m.t2].n}</span></div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+window.setRealGroup=function(idx,field,val){
+  if(val!==''&&!/^\d+$/.test(val)) return;
+  if(!realResults.groupScores[idx]) realResults.groupScores[idx]={};
+  realResults.groupScores[idx][field]=val===''?null:+val;
+};
+
+// ─── CONTROL: ELIM ──────────────────────────────────────────
+function realBracket(){
+  // Calc real standings and build real bracket
+  const {firsts,seconds,bestThirds}=getQualifiedFromReal();
+  const tn=a=>a||null;
+  const gw=(id,t1,t2)=>{
+    const s=realResults.elimScores[id]||{};
+    if(s.s1==null||s.s1===''||s.s2==null||s.s2==='') return null;
+    const g1=+s.s1,g2=+s.s2;
+    return g1>g2?t1:(g2>g1?t2:null);
+  };
+
+  const R32=[
+    {id:'r32_0',t1:tn(firsts[0]),t2:tn(bestThirds[0])},{id:'r32_1',t1:tn(firsts[1]),t2:tn(bestThirds[1])},
+    {id:'r32_2',t1:tn(firsts[2]),t2:tn(bestThirds[2])},{id:'r32_3',t1:tn(firsts[3]),t2:tn(bestThirds[3])},
+    {id:'r32_4',t1:tn(firsts[4]),t2:tn(bestThirds[4])},{id:'r32_5',t1:tn(firsts[5]),t2:tn(bestThirds[5])},
+    {id:'r32_6',t1:tn(firsts[6]),t2:tn(bestThirds[6])},{id:'r32_7',t1:tn(firsts[7]),t2:tn(bestThirds[7])},
+    {id:'r32_8',t1:tn(firsts[8]),t2:tn(seconds[0])},{id:'r32_9',t1:tn(firsts[9]),t2:tn(seconds[1])},
+    {id:'r32_10',t1:tn(firsts[10]),t2:tn(seconds[2])},{id:'r32_11',t1:tn(firsts[11]),t2:tn(seconds[3])},
+    {id:'r32_12',t1:tn(seconds[4]),t2:tn(seconds[8])},{id:'r32_13',t1:tn(seconds[5]),t2:tn(seconds[9])},
+    {id:'r32_14',t1:tn(seconds[6]),t2:tn(seconds[10])},{id:'r32_15',t1:tn(seconds[7]),t2:tn(seconds[11])},
+  ];
+  const R32w=R32.map(m=>gw(m.id,m.t1,m.t2));
+  const R16=Array.from({length:8},(_,i)=>({id:`r16_${i}`,t1:R32w[i*2]||null,t2:R32w[i*2+1]||null}));
+  const R16w=R16.map(m=>gw(m.id,m.t1,m.t2));
+  const QF=Array.from({length:4},(_,i)=>({id:`qf_${i}`,t1:R16w[i*2]||null,t2:R16w[i*2+1]||null}));
+  const QFw=QF.map(m=>gw(m.id,m.t1,m.t2));
+  const SF=Array.from({length:2},(_,i)=>({id:`sf_${i}`,t1:QFw[i*2]||null,t2:QFw[i*2+1]||null}));
+  const SFw=SF.map(m=>gw(m.id,m.t1,m.t2));
+  const Final=[{id:'f_0',t1:SFw[0]||null,t2:SFw[1]||null}];
+  const champ=gw('f_0',Final[0].t1,Final[0].t2);
+  return {R32,R16,QF,SF,Final,champ};
+}
+
+function getQualifiedFromReal(){
+  // Use real group scores to compute real standings
+  const st={};
+  Object.keys(TEAMS).forEach(id=>{st[id]={id,pj:0,pg:0,pe:0,pp:0,gf:0,gc:0,pts:0};});
+  GROUP_MATCHES_RAW.forEach((m,i)=>{
+    const sc=realResults.groupScores[i]||{};
+    if(sc.s1==null||sc.s1===''||sc.s2==null||sc.s2==='') return;
+    const g1=+sc.s1,g2=+sc.s2;
+    const a=st[m.t1],b=st[m.t2];
+    a.pj++;b.pj++;a.gf+=g1;a.gc+=g2;b.gf+=g2;b.gc+=g1;
+    if(g1>g2){a.pts+=3;a.pg++;b.pp++;}
+    else if(g2>g1){b.pts+=3;b.pg++;a.pp++;}
+    else{a.pts++;b.pts++;a.pe++;b.pe++;}
+  });
+  const firsts=[],seconds=[],thirds=[];
+  GROUPS.forEach(g=>{
+    const t=Object.values(st).filter(x=>TEAMS[x.id].g===g)
+      .sort((a,b)=>b.pts-a.pts||(b.gf-b.gc)-(a.gf-a.gc)||b.gf-a.gf);
+    if(t[0])firsts.push(t[0].id);
+    if(t[1])seconds.push(t[1].id);
+    if(t[2])thirds.push(t[2].id);
+  });
+  const scThirds=thirds.map(id=>st[id]).sort((a,b)=>b.pts-a.pts||(b.gf-b.gc)-(a.gf-a.gc)||b.gf-a.gf);
+  return{firsts,seconds,bestThirds:scThirds.slice(0,8).map(t=>t.id)};
+}
+
+window.renderControlElim=function(){
+  const phase=document.getElementById('control-phase-sel').value;
+  const br=realBracket();
+  const rounds={r32:br.R32,r16:br.R16,qf:br.QF,sf:br.SF,final:br.Final};
+  const rnd=rounds[phase]||[];
+  const labels={r32:'16avos',r16:'Octavos',qf:'Cuartos',sf:'Semifinal',final:'FINAL'};
+  const el=document.getElementById('control-elim-matches');
+  // Map phase key to elimId prefix
+  const pfx={r32:'r32',r16:'r16',qf:'qf',sf:'sf',final:'f'};
+  el.innerHTML=rnd.map((m,i)=>{
+    const kid=`${pfx[phase]}_${i}`;
+    const sc=realResults.elimScores[kid]||{};
+    const ready=m.t1&&m.t2;
+    const done=sc.s1!=null&&sc.s1!==''&&sc.s2!=null&&sc.s2!=='';
+    return `<div class="real-result-card${done?' result-done':''}">
+      <div class="match-card-header">
+        <span class="match-label">${labels[phase]} ${rnd.length>1?'· '+(i+1):''}</span>
+        ${done?'<span style="color:#006600;font-size:.7rem;font-weight:800;">✓ JUGADO</span>':''}
+      </div>
+      <div class="teams-row">
+        <div class="team">${m.t1?flag(m.t1):''}
+          <span>${m.t1?TEAMS[m.t1].n:'TBD'}</span></div>
+        <div class="score-wrap">
+          <input class="real-score-input" type="text" inputmode="numeric" maxlength="2" value="${sc.s1??''}"
+            ${!ready?'disabled':''} oninput="setRealElim('${kid}','s1',this.value)">
+          <span class="vs-sep">-</span>
+          <input class="real-score-input" type="text" inputmode="numeric" maxlength="2" value="${sc.s2??''}"
+            ${!ready?'disabled':''} oninput="setRealElim('${kid}','s2',this.value)">
+        </div>
+        <div class="team">${m.t2?flag(m.t2):''}
+          <span>${m.t2?TEAMS[m.t2].n:'TBD'}</span></div>
+      </div>
+    </div>`;
+  }).join('');
+};
+
+window.setRealElim=function(kid,field,val){
+  if(val!==''&&!/^\d+$/.test(val)) return;
+  if(!realResults.elimScores[kid]) realResults.elimScores[kid]={};
+  realResults.elimScores[kid][field]=val===''?null:+val;
+};
+
+// ─── SAVE/LOAD REAL RESULTS (Firebase + localStorage) ────────
+window.saveRealResults=async function(){
+  localStorage.setItem('q2026_real', JSON.stringify(realResults));
+  try{
+    const db=await getDB();
+    await db.setDoc(db.doc(db.fs, DB_COLLECTION, REAL_DOC_ID), realResults);
+    toast('✅ Resultados guardados en la nube');
+  }catch(e){
+    toast('💾 Guardado local (sin conexión)');
+  }
+  // Refresh ranking and elim if open
+  if(document.getElementById('tab-ranking').classList.contains('active')) renderRanking();
+  renderControlElim();
+};
+
+async function loadRealResults(){
+  // Local first
+  try{
+    const local=localStorage.getItem('q2026_real');
+    if(local) realResults=JSON.parse(local);
+  }catch(e){}
+  // Then cloud
+  try{
+    const db=await getDB();
+    const {getDoc,doc}=await import("https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js");
+    const docSnap=await getDoc(doc(db.fs, DB_COLLECTION, REAL_DOC_ID));
+    if(docSnap.exists()) realResults=docSnap.data();
+    localStorage.setItem('q2026_real', JSON.stringify(realResults));
+  }catch(e){}
+}
+
+// ═══════════════════════════════════════════════════════════════
 // TABS
 // ═══════════════════════════════════════════════════════════════
 window.goTab=function(id,btn){
@@ -962,6 +1351,16 @@ window.goTab=function(id,btn){
   if(id==='resumen') renderSummary();
   if(id==='comparar'){populateCompareSelects();renderCompare();}
   if(id==='eliminatoria') renderElim();
+  if(id==='ranking') renderRanking();
+  if(id==='control'){
+    if(adminUnlocked){
+      document.getElementById('control-lock').style.display='none';
+      document.getElementById('control-panel').style.display='block';
+      renderControlGroupTabs();
+      renderControlGroupMatches();
+      renderControlElim();
+    }
+  }
 };
 
 // ═══════════════════════════════════════════════════════════════
@@ -1027,6 +1426,7 @@ async function init(){
   // 3. Carga desde la nube (sincroniza perfiles de todos)
   showLoading('Sincronizando perfiles...');
   await loadFromCloud();
+  await loadRealResults();
 
   // Fusiona: si la nube tiene perfiles nuevos que no tenemos local, agrégalos
   // Si tenemos local que no está en la nube (offline), los subimos
@@ -1068,6 +1468,7 @@ async function init(){
 setInterval(async ()=>{
   const prev=profiles.length;
   await loadFromCloud();
+  await loadRealResults();
   if(profiles.length!==prev){
     localStorage.setItem('q2026_profiles', JSON.stringify(profiles));
     // Si estamos en comparar, refresca
