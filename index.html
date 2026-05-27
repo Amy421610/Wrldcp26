@@ -4,6 +4,7 @@
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
 <title>Quiniela Mundial 2026</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚽</text></svg>"/>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
 <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;800;900&display=swap" rel="stylesheet"/>
@@ -395,44 +396,90 @@ const TEAMS = {
 };
 
 const GROUP_MATCHES_RAW = [
-  {t1:'MX',t2:'ZA',d:'11 Jun'},{t1:'KR',t2:'CZ',d:'11 Jun'},
-  {t1:'CA',t2:'BA',d:'12 Jun'},{t1:'QA',t2:'CH',d:'12 Jun'},
-  {t1:'BR',t2:'MA',d:'13 Jun'},{t1:'HT',t2:'SCT',d:'13 Jun'},
-  {t1:'US',t2:'PY',d:'13 Jun'},{t1:'AU',t2:'TR',d:'13 Jun'},
-  {t1:'DE',t2:'CW',d:'14 Jun'},{t1:'CI',t2:'EC',d:'14 Jun'},
-  {t1:'NL',t2:'JP',d:'14 Jun'},{t1:'SE',t2:'TN',d:'14 Jun'},
-  {t1:'BE',t2:'EG',d:'15 Jun'},{t1:'IR',t2:'NZ',d:'15 Jun'},
-  {t1:'ES',t2:'CV',d:'15 Jun'},{t1:'SA',t2:'UY',d:'15 Jun'},
-  {t1:'FR',t2:'SN',d:'16 Jun'},{t1:'IQ',t2:'NO',d:'16 Jun'},
-  {t1:'AR',t2:'DZ',d:'16 Jun'},{t1:'AT',t2:'JO',d:'16 Jun'},
-  {t1:'PT',t2:'CD',d:'17 Jun'},{t1:'UZ',t2:'CO',d:'17 Jun'},
-  {t1:'ENG',t2:'HR',d:'17 Jun'},{t1:'GH',t2:'PA',d:'17 Jun'},
-  // Jornada 2
-  {t1:'MX',t2:'KR',d:'15 Jun'},{t1:'CZ',t2:'ZA',d:'15 Jun'},
-  {t1:'CA',t2:'QA',d:'16 Jun'},{t1:'CH',t2:'BA',d:'16 Jun'},
-  {t1:'BR',t2:'HT',d:'17 Jun'},{t1:'MA',t2:'SCT',d:'17 Jun'},
-  {t1:'US',t2:'AU',d:'17 Jun'},{t1:'PY',t2:'TR',d:'17 Jun'},
-  {t1:'DE',t2:'CI',d:'18 Jun'},{t1:'EC',t2:'CW',d:'18 Jun'},
-  {t1:'NL',t2:'SE',d:'18 Jun'},{t1:'JP',t2:'TN',d:'18 Jun'},
-  {t1:'BE',t2:'IR',d:'19 Jun'},{t1:'EG',t2:'NZ',d:'19 Jun'},
-  {t1:'ES',t2:'SA',d:'19 Jun'},{t1:'CV',t2:'UY',d:'19 Jun'},
-  {t1:'FR',t2:'IQ',d:'20 Jun'},{t1:'SN',t2:'NO',d:'20 Jun'},
-  {t1:'AR',t2:'AT',d:'20 Jun'},{t1:'DZ',t2:'JO',d:'20 Jun'},
-  {t1:'PT',t2:'UZ',d:'21 Jun'},{t1:'CD',t2:'CO',d:'21 Jun'},
-  {t1:'ENG',t2:'GH',d:'21 Jun'},{t1:'HR',t2:'PA',d:'21 Jun'},
-  // Jornada 3
-  {t1:'ZA',t2:'KR',d:'25 Jun'},{t1:'CZ',t2:'MX',d:'25 Jun'},
-  {t1:'BA',t2:'QA',d:'25 Jun'},{t1:'CH',t2:'CA',d:'25 Jun'},
-  {t1:'HT',t2:'MA',d:'26 Jun'},{t1:'SCT',t2:'BR',d:'26 Jun'},
-  {t1:'TR',t2:'US',d:'26 Jun'},{t1:'PY',t2:'AU',d:'26 Jun'},
-  {t1:'CW',t2:'DE',d:'27 Jun'},{t1:'EC',t2:'CI',d:'27 Jun'},
-  {t1:'TN',t2:'NL',d:'27 Jun'},{t1:'SE',t2:'JP',d:'27 Jun'},
-  {t1:'NZ',t2:'BE',d:'28 Jun'},{t1:'EG',t2:'IR',d:'28 Jun'},
-  {t1:'UY',t2:'ES',d:'28 Jun'},{t1:'SA',t2:'CV',d:'28 Jun'},
-  {t1:'NO',t2:'FR',d:'29 Jun'},{t1:'IQ',t2:'SN',d:'29 Jun'},
-  {t1:'JO',t2:'AR',d:'29 Jun'},{t1:'AT',t2:'DZ',d:'29 Jun'},
-  {t1:'CO',t2:'PT',d:'30 Jun'},{t1:'UZ',t2:'CD',d:'30 Jun'},
-  {t1:'PA',t2:'ENG',d:'30 Jun'},{t1:'HR',t2:'GH',d:'30 Jun'},
+  // ── GRUPO A ── (índices 0-5)
+  {t1:'MX',  t2:'ZA',  d:'Jun', g:'A'}, // 0  México vs Sudáfrica
+  {t1:'KR',  t2:'CZ',  d:'Jun', g:'A'}, // 1  Corea vs Rep. Checa
+  {t1:'CZ',  t2:'ZA',  d:'Jun', g:'A'}, // 2  Rep. Checa vs Sudáfrica
+  {t1:'MX',  t2:'KR',  d:'Jun', g:'A'}, // 3  México vs Corea
+  {t1:'MX',  t2:'CZ',  d:'Jun', g:'A'}, // 4  México vs Rep. Checa
+  {t1:'ZA',  t2:'KR',  d:'Jun', g:'A'}, // 5  Sudáfrica vs Corea
+  // ── GRUPO B ── (índices 6-11)
+  {t1:'CA',  t2:'BA',  d:'Jun', g:'B'}, // 6  Canadá vs Bosnia
+  {t1:'QA',  t2:'CH',  d:'Jun', g:'B'}, // 7  Catar vs Suiza
+  {t1:'CH',  t2:'BA',  d:'Jun', g:'B'}, // 8  Suiza vs Bosnia
+  {t1:'CA',  t2:'QA',  d:'Jun', g:'B'}, // 9  Canadá vs Catar
+  {t1:'CH',  t2:'CA',  d:'Jun', g:'B'}, // 10 Suiza vs Canadá
+  {t1:'BA',  t2:'QA',  d:'Jun', g:'B'}, // 11 Bosnia vs Catar
+  // ── GRUPO C ── (índices 12-17)
+  {t1:'BR',  t2:'MA',  d:'Jun', g:'C'}, // 12 Brasil vs Marruecos
+  {t1:'HT',  t2:'SCT', d:'Jun', g:'C'}, // 13 Haití vs Escocia
+  {t1:'BR',  t2:'HT',  d:'Jun', g:'C'}, // 14 Brasil vs Haití
+  {t1:'SCT', t2:'MA',  d:'Jun', g:'C'}, // 15 Escocia vs Marruecos
+  {t1:'MA',  t2:'HT',  d:'Jun', g:'C'}, // 16 Marruecos vs Haití
+  {t1:'SCT', t2:'BR',  d:'Jun', g:'C'}, // 17 Escocia vs Brasil
+  // ── GRUPO D ── (índices 18-23)
+  {t1:'US',  t2:'PY',  d:'Jun', g:'D'}, // 18 EE.UU. vs Paraguay
+  {t1:'AU',  t2:'TR',  d:'Jun', g:'D'}, // 19 Australia vs Turquía
+  {t1:'US',  t2:'AU',  d:'Jun', g:'D'}, // 20 EE.UU. vs Australia
+  {t1:'PY',  t2:'TR',  d:'Jun', g:'D'}, // 21 Paraguay vs Turquía
+  {t1:'TR',  t2:'US',  d:'Jun', g:'D'}, // 22 Turquía vs EE.UU.
+  {t1:'PY',  t2:'AU',  d:'Jun', g:'D'}, // 23 Paraguay vs Australia
+  // ── GRUPO E ── (índices 24-29)
+  {t1:'DE',  t2:'CW',  d:'Jun', g:'E'}, // 24 Alemania vs Curazao
+  {t1:'CI',  t2:'EC',  d:'Jun', g:'E'}, // 25 C.Marfil vs Ecuador
+  {t1:'DE',  t2:'CI',  d:'Jun', g:'E'}, // 26 Alemania vs C.Marfil
+  {t1:'EC',  t2:'CW',  d:'Jun', g:'E'}, // 27 Ecuador vs Curazao
+  {t1:'EC',  t2:'DE',  d:'Jun', g:'E'}, // 28 Ecuador vs Alemania
+  {t1:'CW',  t2:'CI',  d:'Jun', g:'E'}, // 29 Curazao vs C.Marfil
+  // ── GRUPO F ── (índices 30-35)
+  {t1:'NL',  t2:'JP',  d:'Jun', g:'F'}, // 30 P.Bajos vs Japón
+  {t1:'SE',  t2:'TN',  d:'Jun', g:'F'}, // 31 Suecia vs Túnez
+  {t1:'NL',  t2:'SE',  d:'Jun', g:'F'}, // 32 P.Bajos vs Suecia
+  {t1:'TN',  t2:'JP',  d:'Jun', g:'F'}, // 33 Túnez vs Japón
+  {t1:'TN',  t2:'NL',  d:'Jun', g:'F'}, // 34 Túnez vs P.Bajos
+  {t1:'JP',  t2:'SE',  d:'Jun', g:'F'}, // 35 Japón vs Suecia
+  // ── GRUPO G ── (índices 36-41)
+  {t1:'BE',  t2:'EG',  d:'Jun', g:'G'}, // 36 Bélgica vs Egipto
+  {t1:'IR',  t2:'NZ',  d:'Jun', g:'G'}, // 37 Irán vs N.Zelanda
+  {t1:'BE',  t2:'IR',  d:'Jun', g:'G'}, // 38 Bélgica vs Irán
+  {t1:'NZ',  t2:'EG',  d:'Jun', g:'G'}, // 39 N.Zelanda vs Egipto
+  {t1:'NZ',  t2:'BE',  d:'Jun', g:'G'}, // 40 N.Zelanda vs Bélgica
+  {t1:'EG',  t2:'IR',  d:'Jun', g:'G'}, // 41 Egipto vs Irán
+  // ── GRUPO H ── (índices 42-47)
+  {t1:'ES',  t2:'CV',  d:'Jun', g:'H'}, // 42 España vs Cabo Verde
+  {t1:'SA',  t2:'UY',  d:'Jun', g:'H'}, // 43 Arabia S. vs Uruguay
+  {t1:'ES',  t2:'SA',  d:'Jun', g:'H'}, // 44 España vs Arabia S.
+  {t1:'UY',  t2:'CV',  d:'Jun', g:'H'}, // 45 Uruguay vs Cabo Verde
+  {t1:'UY',  t2:'ES',  d:'Jun', g:'H'}, // 46 Uruguay vs España
+  {t1:'CV',  t2:'SA',  d:'Jun', g:'H'}, // 47 Cabo Verde vs Arabia S.
+  // ── GRUPO I ── (índices 48-53)
+  {t1:'FR',  t2:'SN',  d:'Jun', g:'I'}, // 48 Francia vs Senegal
+  {t1:'IQ',  t2:'NO',  d:'Jun', g:'I'}, // 49 Irak vs Noruega
+  {t1:'FR',  t2:'IQ',  d:'Jun', g:'I'}, // 50 Francia vs Irak
+  {t1:'NO',  t2:'SN',  d:'Jun', g:'I'}, // 51 Noruega vs Senegal
+  {t1:'SN',  t2:'IQ',  d:'Jun', g:'I'}, // 52 Senegal vs Irak
+  {t1:'NO',  t2:'FR',  d:'Jun', g:'I'}, // 53 Noruega vs Francia
+  // ── GRUPO J ── (índices 54-59)
+  {t1:'AR',  t2:'DZ',  d:'Jun', g:'J'}, // 54 Argentina vs Argelia
+  {t1:'AT',  t2:'JO',  d:'Jun', g:'J'}, // 55 Austria vs Jordania
+  {t1:'AR',  t2:'AT',  d:'Jun', g:'J'}, // 56 Argentina vs Austria
+  {t1:'JO',  t2:'DZ',  d:'Jun', g:'J'}, // 57 Jordania vs Argelia
+  {t1:'DZ',  t2:'AT',  d:'Jun', g:'J'}, // 58 Argelia vs Austria
+  {t1:'JO',  t2:'AR',  d:'Jun', g:'J'}, // 59 Jordania vs Argentina
+  // ── GRUPO K ── (índices 60-65)
+  {t1:'PT',  t2:'CD',  d:'Jun', g:'K'}, // 60 Portugal vs RD Congo
+  {t1:'UZ',  t2:'CO',  d:'Jun', g:'K'}, // 61 Uzbekistán vs Colombia
+  {t1:'PT',  t2:'UZ',  d:'Jun', g:'K'}, // 62 Portugal vs Uzbekistán
+  {t1:'CO',  t2:'CD',  d:'Jun', g:'K'}, // 63 Colombia vs RD Congo
+  {t1:'CO',  t2:'PT',  d:'Jun', g:'K'}, // 64 Colombia vs Portugal
+  {t1:'CD',  t2:'UZ',  d:'Jun', g:'K'}, // 65 RD Congo vs Uzbekistán
+  // ── GRUPO L ── (índices 66-71)
+  {t1:'ENG', t2:'HR',  d:'Jun', g:'L'}, // 66 Inglaterra vs Croacia
+  {t1:'GH',  t2:'PA',  d:'Jun', g:'L'}, // 67 Ghana vs Panamá
+  {t1:'ENG', t2:'GH',  d:'Jun', g:'L'}, // 68 Inglaterra vs Ghana
+  {t1:'PA',  t2:'HR',  d:'Jun', g:'L'}, // 69 Panamá vs Croacia
+  {t1:'HR',  t2:'GH',  d:'Jun', g:'L'}, // 70 Croacia vs Ghana (era "Croacia vs Ghana" en original)
+  {t1:'PA',  t2:'ENG', d:'Jun', g:'L'}, // 71 Panamá vs Inglaterra
 ];
 
 const GROUPS = ['A','B','C','D','E','F','G','H','I','J','K','L'];
@@ -921,7 +968,24 @@ function renderSummary(){
 }
 
 window.downloadBracket=function(){
-  html2canvas(document.getElementById('summary-card'),{scale:2,backgroundColor:'#050505'}).then(c=>{
+  const card=document.getElementById('summary-card');
+  // Temporarily replace flag imgs with styled emoji text for html2canvas
+  const imgs=card.querySelectorAll('img.flag-img');
+  const saved=[];
+  imgs.forEach(img=>{
+    saved.push({el:img,parent:img.parentNode,next:img.nextSibling,html:img.outerHTML});
+    const span=document.createElement('span');
+    span.style.cssText='font-size:1.1rem;line-height:1;';
+    // Find team by alt text
+    const teamName=img.alt;
+    const teamId=Object.keys(TEAMS).find(k=>TEAMS[k].n===teamName)||'';
+    span.textContent=TEAMS[teamId]?TEAMS[teamId].e:'🏴';
+    img.parentNode.replaceChild(span,img);
+  });
+  html2canvas(card,{scale:2,backgroundColor:'#050505',useCORS:false,allowTaint:true}).then(c=>{
+    // Restore flag imgs
+    // (card was already mutated; just re-render summary)
+    renderSummary();
     const a=document.createElement('a');
     a.download=`Quiniela_${getActive()?.name||'bracket'}_2026.png`;
     a.href=c.toDataURL();
